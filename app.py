@@ -42,14 +42,10 @@ st.markdown("""
 
 st.image("https://assets.cdn.filesafe.space/MCcnQ0ytnakrb0FwnYIM/media/69ea1f539fe87a999456bbe3.png", width=220)
 st.title("Practice Revenue Autopsy™")
+st.write("Input your practice metrics below to see how you compare to industry benchmarks.")
 
-# Inputs (BLANK DEFAULTS)
+# Initial Metrics (No Revenue Here)
 with st.container():
-    user_revenue = st.number_input("Annual Gross Collections ($) if you would like a more accurate depiction of the office autopsy", min_value=0, value=None)
-    
-    # Use 1.2M for calculations as per instruction, or user input if provided
-    calc_revenue = user_revenue if user_revenue else 1200000
-    
     col1, col2 = st.columns(2)
     with col1:
         ebitda_val = st.number_input("Current EBITDA %", min_value=0.0, max_value=100.0, value=None)
@@ -61,6 +57,9 @@ with st.container():
         ins_days = st.number_input("Insurance Collection Days", min_value=0, value=None)
 
     if st.button("Generate Autopsy Results"):
+        # Default to 1.2M for internal math
+        calc_revenue = 1200000
+        
         # THINKING ANIMATION
         with st.empty():
             for i in range(7):
@@ -92,7 +91,7 @@ with st.container():
                     if val >= bench: color = "green"
                     elif val >= (bench * 0.9): color = "yellow"
                     else: color = "red"
-                else: # lower is better
+                else:
                     if name == 'Insurance Collections':
                         days_diff = max(0, val - bench)
                         loss = (days_diff / 365) * 0.07 * calc_revenue
@@ -125,11 +124,17 @@ with st.container():
         </div>
         """, unsafe_allow_html=True)
 
-        # STATUS BLOCKS (No dollar amounts)
+        # STATUS BLOCKS (Recap colors only)
         st.markdown('<div class="status-container">', unsafe_allow_html=True)
         for name, data in results.items():
             st.markdown(f'<div class="status-box status-{data["color"]}">{name}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
+
+        st.divider()
+
+        # REVENUE FIELD AT THE BOTTOM
+        st.subheader("Personalize Your Autopsy Report")
+        final_revenue = st.number_input("Annual Gross Collections ($) if you would like a more accurate depiction of the office autopsy", min_value=0, value=None)
 
         # GHL FORM
         components.html("""
