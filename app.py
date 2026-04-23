@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
 # Setup Page Config
 st.set_page_config(page_title="Pronto | Practice Revenue Autopsy", page_icon="📈", layout="centered")
@@ -18,13 +19,11 @@ st.markdown("""
         color: white; border: none; padding: 18px 30px; border-radius: 8px;
         font-weight: 800; width: 100%; transition: 0.3s;
         text-transform: uppercase; letter-spacing: 1px;
-        border: none;
     }
     div.stButton > button:hover { 
         transform: translateY(-2px); 
         box-shadow: 0 10px 20px rgba(255, 140, 0, 0.4); 
         color: white;
-        border: none;
     }
 
     /* Results Card */
@@ -35,23 +34,18 @@ st.markdown("""
         border: 2px solid #00d2ff; 
         margin-top: 25px; 
         text-align: center;
+        margin-bottom: 30px;
     }
     .metric-title { color: #ff8c00; font-weight: 800; text-transform: uppercase; font-size: 1rem; margin-bottom: 0px; }
     .metric-value { font-size: 2.5rem; font-weight: 900; color: #ffffff; margin-bottom: 5px; }
     
-    /* Contact Button */
-    .contact-btn {
-        background-color: #00d2ff;
-        color: #001e36 !important;
-        padding: 12px 30px;
-        border-radius: 5px;
-        text-decoration: none;
-        font-weight: bold;
-        display: inline-block;
+    .form-title {
+        color: #ff8c00;
+        font-size: 1.5rem;
+        font-weight: 800;
         margin-top: 20px;
-        transition: 0.3s;
+        text-transform: uppercase;
     }
-    .contact-btn:hover { background-color: #ffffff; transform: scale(1.05); }
 
     /* Clean up Streamlit UI */
     #MainMenu {visibility: hidden;}
@@ -111,6 +105,29 @@ with st.container():
                 on the table annually.
             </p>
             <p style="color: rgba(255,255,255,0.7);">Pronto specializes in closing this gap through clinical optimization and cultural metrics.</p>
-            <a href="https://prontobymaeva.com/#contact" class="contact-btn">REACH OUT TO PRONTO</a>
+            <p class="form-title">Reach Out to Pronto</p>
         </div>
         """, unsafe_allow_html=True)
+
+        # GHL Form Embed
+        ghl_form_html = """
+        <iframe
+            src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh"
+            style="width:100%;height:500px;border:none;border-radius:8px"
+            id="inline-iVFg0wteKeXMSEXviPvh" 
+            data-layout="{'id':'INLINE'}"
+            data-trigger-type="alwaysShow"
+            data-trigger-value=""
+            data-activation-type="alwaysActivated"
+            data-activation-value=""
+            data-deactivation-type="neverDeactivate"
+            data-deactivation-value=""
+            data-form-name="Form 0"
+            data-height="467"
+            data-layout-iframe-id="inline-iVFg0wteKeXMSEXviPvh"
+            data-form-id="iVFg0wteKeXMSEXviPvh"
+            title="Form 0">
+        </iframe>
+        <script src="https://link.msgsndr.com/js/form_embed.js"></script>
+        """
+        components.html(ghl_form_html, height=520, scrolling=True)
