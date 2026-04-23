@@ -5,38 +5,29 @@ import time
 # Setup Page Config
 st.set_page_config(page_title="Pronto | Practice Revenue Autopsy", page_icon="📈", layout="centered")
 
-# Custom CSS for Pronto Branding and Status Blocks
+# Custom CSS for Branding
 st.markdown("""
     <style>
     .stApp { background-color: #001e36; color: #ffffff; }
     .stNumberInput label { color: #ffffff !important; font-weight: 600; }
-    
-    /* Button Styling */
     div.stButton > button:first-child {
         background: linear-gradient(90deg, #ff8c00 0%, #ff4500 100%);
         color: white; border: none; padding: 18px 30px; border-radius: 8px;
         font-weight: 800; width: 100%; transition: 0.3s;
         text-transform: uppercase; letter-spacing: 1px;
     }
-
-    /* Verdict Card */
     .report-card { 
         background: rgba(255, 255, 255, 0.05); 
         padding: 30px; border-radius: 15px; 
         border: 2px solid #00d2ff; text-align: center; margin-bottom: 30px;
     }
-
-    /* Color Blocks */
     .status-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
     .status-box { padding: 20px; border-radius: 8px; font-weight: bold; text-align: center; font-size: 0.9rem; border: 2px solid transparent; text-transform: uppercase; }
     .status-green { border-color: #28a745; background: rgba(40, 167, 69, 0.1); color: #28a745; }
     .status-yellow { border-color: #ffc107; background: rgba(255, 193, 7, 0.1); color: #ffc107; }
     .status-red { border-color: #dc3545; background: rgba(220, 53, 69, 0.1); color: #dc3545; }
     .status-white { border-color: #ffffff; background: rgba(255, 255, 255, 0.1); color: #ffffff; }
-
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    #MainMenu, footer, header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -44,7 +35,7 @@ st.image("https://assets.cdn.filesafe.space/MCcnQ0ytnakrb0FwnYIM/media/69ea1f539
 st.title("Practice Revenue Autopsy™")
 st.write("Input your practice metrics below to see how you compare to industry benchmarks.")
 
-# Initial Metrics (No Revenue Here)
+# Inputs
 with st.container():
     col1, col2 = st.columns(2)
     with col1:
@@ -56,10 +47,8 @@ with st.container():
         no_shows = st.number_input("No Shows %", min_value=0.0, max_value=100.0, value=None)
         ins_days = st.number_input("Insurance Collection Days", min_value=0, value=None)
 
+    # ALL RESULTS ARE NESTED INSIDE THIS BUTTON BLOCK
     if st.button("Generate Autopsy Results"):
-        # Default to 1.2M for internal math
-        calc_revenue = 1200000
-        
         # THINKING ANIMATION
         with st.empty():
             for i in range(7):
@@ -67,7 +56,8 @@ with st.container():
                 time.sleep(1)
             st.write("")
 
-        # CALCULATIONS & BENCHMARKS
+        # Calculations
+        calc_revenue = 1200000
         results = {}
         fields = {
             'EBITDA %': (ebitda_val, 30, 'higher'),
@@ -78,40 +68,31 @@ with st.container():
             'Insurance Collections': (ins_days, 60, 'lower')
         }
 
-        any_empty = False
+        any_empty = any(v is None for v, b, d in fields.values())
         
         for name, (val, bench, direction) in fields.items():
             if val is None:
                 results[name] = {'loss': 0, 'color': 'white'}
-                any_empty = True
             else:
                 if direction == 'higher':
                     diff = (bench / 100) - (val / 100)
                     loss = max(0, diff * calc_revenue)
-                    if val >= bench: color = "green"
-                    elif val >= (bench * 0.9): color = "yellow"
-                    else: color = "red"
+                    color = "green" if val >= bench else ("yellow" if val >= (bench * 0.9) else "red")
                 else:
                     if name == 'Insurance Collections':
                         days_diff = max(0, val - bench)
                         loss = (days_diff / 365) * 0.07 * calc_revenue
-                        if val <= bench: color = "green"
-                        elif val <= (bench * 1.1): color = "yellow"
-                        else: color = "red"
+                        color = "green" if val <= bench else ("yellow" if val <= (bench * 1.1) else "red")
                     else:
                         diff = (val / 100) - (bench / 100)
                         loss = max(0, diff * calc_revenue)
-                        if val <= bench: color = "green"
-                        elif val <= (bench * 1.1): color = "yellow"
-                        else: color = "red"
-                
+                        color = "green" if val <= bench else ("yellow" if val <= (bench * 1.1) else "red")
                 results[name] = {'loss': loss, 'color': color}
 
-        # FIND HIGHEST LOSS FOR VERDICT
         low_hanging_fruit = max(results, key=lambda x: results[x]['loss'])
         total_loss = sum(item['loss'] for item in results.values())
 
-        # VERDICT SECTION
+        # VERDICT (Inside the Button Logic)
         st.markdown(f"""
         <div class="report-card">
             <h1 style="color: #ffffff; margin-top:0;">The Verdict</h1>
@@ -119,25 +100,23 @@ with st.container():
             <p style="font-size: 1.1rem;">Based on 1.2 million in production, your practice is leaving <b>${total_loss:,.0f}</b> on the table annually.</p>
             {f'<p style="font-size: 1rem; color: #00d2ff; font-weight: bold; margin-top: 10px;">I see that you left one or more fields. With Pronto, you will have access to all of these numbers at your fingertips each and every day.</p>' if any_empty else ''}
             <p style="font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-top: 20px;">
-                To get a more detailed analysis and autopsy of your personal results, please fill out the following and we will elaborate on the {low_hanging_fruit} results as well as the others and let you know what can be done about it.
+                Please fill out the following and we will elaborate on your <b>{low_hanging_fruit}</b> results as well as the other metrics to show you exactly how to close the gap.
             </p>
         </div>
         """, unsafe_allow_html=True)
 
-        # STATUS BLOCKS (Recap colors only)
+        # Status Blocks
         st.markdown('<div class="status-container">', unsafe_allow_html=True)
         for name, data in results.items():
             st.markdown(f'<div class="status-box status-{data["color"]}">{name}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
+        # GHL Form and Optional Revenue Field (Hidden until button is clicked)
         st.divider()
-
-        # REVENUE FIELD AT THE BOTTOM
         st.subheader("Personalize Your Autopsy Report")
-        final_revenue = st.number_input("Annual Gross Collections ($) if you would like a more accurate depiction of the office autopsy", min_value=0, value=None)
+        st.number_input("Annual Gross Collections ($) if you would like a more accurate depiction of the office autopsy", min_value=0, value=None)
 
-        # GHL FORM
         components.html("""
-            <iframe src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh" style="width:100%;height:500px;border:none;border-radius:8px" id="inline-iVFg0wteKeXMSEXviPvh" data-form-id="iVFg0wteKeXMSEXviPvh" title="Form 0"></iframe>
+            <iframe src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh" style="width:100%;height:500px;border:none;border-radius:8px" id="inline-iVFg0wteKeXMSEXviPvh" data-form-id="iVFg0wteKeXMSEXviPvh"></iframe>
             <script src="https://link.msgsndr.com/js/form_embed.js"></script>
         """, height=520)
