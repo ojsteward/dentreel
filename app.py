@@ -43,13 +43,9 @@ st.markdown("""
 st.image("https://assets.cdn.filesafe.space/MCcnQ0ytnakrb0FwnYIM/media/69ea1f539fe87a999456bbe3.png", width=220)
 st.title("Practice Revenue Autopsy™")
 
-# Inputs (BLANK DEFAULTS)
+# Inputs Container
 with st.container():
-    user_revenue = st.number_input("Annual Gross Collections ($) if you would like a more accurate depiction of the office autopsy", min_value=0, value=None)
-    
-    # Use 1.2M for calculations as per instruction, or user input if provided
-    calc_revenue = user_revenue if user_revenue else 1200000
-    
+    # 6 Metrics First
     col1, col2 = st.columns(2)
     with col1:
         ebitda_val = st.number_input("Current EBITDA %", min_value=0.0, max_value=100.0, value=None)
@@ -60,6 +56,13 @@ with st.container():
         no_shows = st.number_input("No Shows %", min_value=0.0, max_value=100.0, value=None)
         ins_days = st.number_input("Insurance Collection Days", min_value=0, value=None)
 
+    # Annual Gross Collections moved to the bottom of the list
+    user_revenue = st.number_input("Annual Gross Collections ($) if you would like a more accurate depiction of the office autopsy", min_value=0, value=None)
+    
+    # Use 1.2M for calculations as per instruction, or user input if provided
+    calc_revenue = user_revenue if user_revenue else 1200000
+
+    # Action Button
     if st.button("Generate Autopsy Results"):
         # THINKING ANIMATION
         with st.empty():
@@ -117,7 +120,7 @@ with st.container():
         <div class="report-card">
             <h1 style="color: #ffffff; margin-top:0;">The Verdict</h1>
             <p style="font-size: 1.2rem;">Pronto discovered that your low hanging fruit is in <b>{low_hanging_fruit}</b></p>
-            <p style="font-size: 1.1rem;">Based on 1.2 million in production, your practice is leaving <b>${total_loss:,.0f}</b> on the table annually.</p>
+            <p style="font-size: 1.1rem;">Based on {calc_revenue/1000000:.1f} million in production, your practice is leaving <b>${total_loss:,.0f}</b> on the table annually.</p>
             {f'<p style="font-size: 1rem; color: #00d2ff; font-weight: bold; margin-top: 10px;">I see that you left one or more fields. With Pronto, you will have access to all of these numbers at your fingertips each and every day.</p>' if any_empty else ''}
             <p style="font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-top: 20px;">
                 To get a more detailed analysis and autopsy of your personal results, please fill out the following and we will elaborate on the {low_hanging_fruit} results as well as the others and let you know what can be done about it.
@@ -125,14 +128,14 @@ with st.container():
         </div>
         """, unsafe_allow_html=True)
 
-        # STATUS BLOCKS (No dollar amounts)
+        # STATUS BLOCKS
         st.markdown('<div class="status-container">', unsafe_allow_html=True)
         for name, data in results.items():
             st.markdown(f'<div class="status-box status-{data["color"]}">{name}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         # GHL FORM
-        components.html("""
+        components.html(f"""
             <iframe src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh" style="width:100%;height:500px;border:none;border-radius:8px" id="inline-iVFg0wteKeXMSEXviPvh" data-form-id="iVFg0wteKeXMSEXviPvh" title="Form 0"></iframe>
             <script src="https://link.msgsndr.com/js/form_embed.js"></script>
         """, height=520)
