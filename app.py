@@ -103,11 +103,6 @@ with st.container():
             <p style="font-size: 1.2rem; font-family: sans-serif;">Pronto discovered that your low hanging fruit is in <b>{low_hanging_fruit}</b></p>
             <p style="font-size: 1.1rem; font-family: sans-serif;">Based on 1.2 million in production, your practice is leaving <b>${total_loss:,.0f}</b> on the table annually.</p>
             {empty_msg}
-            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
-            <p style="font-size: 1rem; color: #ff8c00; font-weight: 700; font-family: sans-serif; margin-bottom: 5px;">Ready to close the gap?</p>
-            <p style="font-size: 0.9rem; color: #ffffff; font-family: sans-serif; line-height: 1.4;">
-                Fill out the form below to get in touch with <b>Pronto</b>. We’ll perform a comprehensive examination of your office metrics and provide a tailored strategy to recover your lost revenue.
-            </p>
         </div>
         """
         st.markdown(verdict_html, unsafe_allow_html=True)
