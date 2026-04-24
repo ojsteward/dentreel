@@ -37,7 +37,7 @@ st.markdown("""
 st.image("https://assets.cdn.filesafe.space/MCcnQ0ytnakrb0FwnYIM/media/69ea1f539fe87a999456bbe3.png", width=220)
 st.title("Practice Revenue Autopsy™")
 
-# 2. INPUT SECTION (Integers Only)
+# 2. INPUT SECTION
 with st.container():
     col1, col2 = st.columns(2)
     with col1:
@@ -47,6 +47,7 @@ with st.container():
     with col2:
         missed_calls = st.number_input("% of Missed Calls", min_value=0, max_value=100, value=None, step=1)
         no_shows = st.number_input("No Show %", min_value=0, max_value=100, value=None, step=1)
+        # Assuming you want Insurance Collections to follow the same integer step logic
         ins_days = st.number_input("Days to Collect from Ins", min_value=0, value=None, step=1)
 
     if st.button("Generate Autopsy Results"):
@@ -57,7 +58,7 @@ with st.container():
                 time.sleep(1)
             st.write("")
 
-        # 3. CALCULATIONS (1.2M Baseline)
+        # 3. CALCULATIONS
         revenue = 1200000
         results = {}
         
@@ -113,7 +114,18 @@ with st.container():
             st.markdown(f'<div class="status-box status-{data["color"]}">{name}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 6. LEAD FORM
+        # 6. NEW CALL TO ACTION TEXT
+        st.markdown(f"""
+            <div style="text-align: center; margin-bottom: 20px; padding: 10px;">
+                <p style="font-size: 1.1rem; color: #ff8c00; font-weight: 700; margin-bottom: 5px;">Ready to examine your office further?</p>
+                <p style="font-size: 1rem; color: #ffffff; line-height: 1.4;">
+                    Fill out the form below to get in touch with <b>Pronto</b> so we can perform a deep dive 
+                    into your practice and help you reclaim that <b>${total_loss:,.0f}</b> in lost revenue.
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # 7. LEAD FORM
         components.html("""
             <iframe src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh" style="width:100%;height:500px;border:none;border-radius:8px" id="inline-iVFg0wteKeXMSEXviPvh" data-form-id="iVFg0wteKeXMSEXviPvh"></iframe>
             <script src="https://link.msgsndr.com/js/form_embed.js"></script>
