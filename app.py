@@ -47,11 +47,9 @@ with st.container():
     with col2:
         missed_calls = st.number_input("% of Missed Calls", min_value=0, max_value=100, value=None, step=1)
         no_shows = st.number_input("No Show %", min_value=0, max_value=100, value=None, step=1)
-        # Assuming you want Insurance Collections to follow the same integer step logic
         ins_days = st.number_input("Days to Collect from Ins", min_value=0, value=None, step=1)
 
     if st.button("Generate Autopsy Results"):
-        # 7-Second Thinking Animation
         with st.empty():
             for i in range(7):
                 st.markdown(f"### 🧪 Pronto AI is conducting autopsy... {7-i}s")
@@ -61,7 +59,6 @@ with st.container():
         # 3. CALCULATIONS
         revenue = 1200000
         results = {}
-        
         fields = {
             'EBITDA %': (ebitda_val, 22, 'higher'),
             'Hyg Perio': (hygiene_val, 40, 'higher'),
@@ -114,7 +111,7 @@ with st.container():
             st.markdown(f'<div class="status-box status-{data["color"]}">{name}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 6. NEW CALL TO ACTION TEXT
+        # 6. CALL TO ACTION TEXT
         st.markdown(f"""
             <div style="text-align: center; margin-bottom: 20px; padding: 10px;">
                 <p style="font-size: 1.1rem; color: #ff8c00; font-weight: 700; margin-bottom: 5px;">Ready to examine your office further?</p>
@@ -125,8 +122,8 @@ with st.container():
             </div>
         """, unsafe_allow_html=True)
 
-        # 7. LEAD FORM
+        # 7. LEAD FORM (Increased height to 700px)
         components.html("""
-            <iframe src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh" style="width:100%;height:500px;border:none;border-radius:8px" id="inline-iVFg0wteKeXMSEXviPvh" data-form-id="iVFg0wteKeXMSEXviPvh"></iframe>
+            <iframe src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh" style="width:100%;height:650px;border:none;border-radius:8px" id="inline-iVFg0wteKeXMSEXviPvh" data-form-id="iVFg0wteKeXMSEXviPvh"></iframe>
             <script src="https://link.msgsndr.com/js/form_embed.js"></script>
-        """, height=520)
+        """, height=700)
