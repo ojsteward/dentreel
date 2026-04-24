@@ -56,11 +56,9 @@ with st.container():
                 time.sleep(1)
             st.write("")
 
-        # 3. CALCULATIONS (Locked to 1.2M Baseline with Updated Benchmarks)
+        # 3. CALCULATIONS
         revenue = 1200000
         results = {}
-        
-        # New Benchmarks per your list
         fields = {
             'EBITDA %': (ebitda_val, 22, 'higher'),
             'Hyg Perio': (hygiene_val, 40, 'higher'),
@@ -83,7 +81,6 @@ with st.container():
                 else:
                     if name == 'Insurance Collections':
                         ddd = max(0, val - bench)
-                        # Formula: DDD / 365 * 0.07 * 1,200,000
                         loss = (ddd / 365) * 0.07 * revenue
                         color = "green" if val <= bench else ("yellow" if val <= (bench * 1.1) else "red")
                     else:
@@ -96,7 +93,8 @@ with st.container():
         total_loss = sum(item['loss'] for item in results.values())
 
         # 4. VERDICT RENDERING
-        empty_msg = f'<p style="color: #00d2ff; font-weight: bold; margin-top: 10px; font-family: sans-serif;">I see that you left one or more fields. With Pronto, you will have access to all of these numbers at your fingertips each and every day.</p>' if any_empty else ''
+        # Updated "left out" message
+        empty_msg = f'<p style="color: #00d2ff; font-weight: bold; margin-top: 10px; font-family: sans-serif;">I see that you left out one or more fields. With Pronto, you will have access to all of these numbers at your fingertips each and every day.</p>' if any_empty else ''
         
         verdict_html = f"""
         <div class="report-card">
@@ -114,13 +112,12 @@ with st.container():
             st.markdown(f'<div class="status-box status-{data["color"]}">{name}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 6. CALL TO ACTION TEXT
+        # 6. UPDATED CALL TO ACTION TEXT
         st.markdown(f"""
             <div style="text-align: center; margin-bottom: 20px; padding: 10px;">
-                <p style="font-size: 1.1rem; color: #ff8c00; font-weight: 700; margin-bottom: 5px;">Ready to examine your office further?</p>
-                <p style="font-size: 1rem; color: #ffffff; line-height: 1.4;">
-                    Fill out the form below to get in touch with <b>Pronto</b> so we can perform a deep dive 
-                    into your practice and help you reclaim that <b>${total_loss:,.0f}</b> in lost revenue.
+                <p style="font-size: 1.1rem; color: #ffffff; font-family: sans-serif; line-height: 1.5;">
+                    Fill out the form below to get your complete Autopsy with opportunities for each of these 6 categories. 
+                    <b>Now imagine if you had 140 of these at your finger tips each and every day.</b>
                 </p>
             </div>
         """, unsafe_allow_html=True)
