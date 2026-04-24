@@ -37,17 +37,17 @@ st.markdown("""
 st.image("https://assets.cdn.filesafe.space/MCcnQ0ytnakrb0FwnYIM/media/69ea1f539fe87a999456bbe3.png", width=220)
 st.title("Practice Revenue Autopsy™")
 
-# 2. INPUT SECTION (Back to Original 6)
+# 2. INPUT SECTION (Integers Only)
 with st.container():
     col1, col2 = st.columns(2)
     with col1:
-        ebitda_val = st.number_input("Current EBITDA %", min_value=0.0, max_value=100.0, value=None)
-        hygiene_val = st.number_input("Hyg Perio %", min_value=0.0, max_value=100.0, value=None)
-        case_val = st.number_input("Case Acceptance %", min_value=0.0, max_value=100.0, value=None)
+        ebitda_val = st.number_input("Current EBITDA %", min_value=0, max_value=100, value=None, step=1)
+        hygiene_val = st.number_input("Hyg Perio %", min_value=0, max_value=100, value=None, step=1)
+        case_val = st.number_input("Case Acceptance %", min_value=0, max_value=100, value=None, step=1)
     with col2:
-        missed_calls = st.number_input("% of Missed Calls", min_value=0.0, max_value=100.0, value=None)
-        no_shows = st.number_input("No Show %", min_value=0.0, max_value=100.0, value=None)
-        ins_days = st.number_input("Days to Collect from Ins", min_value=0, value=None)
+        missed_calls = st.number_input("% of Missed Calls", min_value=0, max_value=100, value=None, step=1)
+        no_shows = st.number_input("No Show %", min_value=0, max_value=100, value=None, step=1)
+        ins_days = st.number_input("Days to Collect from Ins", min_value=0, value=None, step=1)
 
     if st.button("Generate Autopsy Results"):
         # 7-Second Thinking Animation
@@ -57,11 +57,10 @@ with st.container():
                 time.sleep(1)
             st.write("")
 
-        # 3. CALCULATIONS (Locked to 1.2M Baseline with New Benchmarks)
+        # 3. CALCULATIONS (1.2M Baseline)
         revenue = 1200000
         results = {}
         
-        # New Benchmarks applied to the 6 fields
         fields = {
             'EBITDA %': (ebitda_val, 22, 'higher'),
             'Hyg Perio': (hygiene_val, 40, 'higher'),
@@ -84,7 +83,6 @@ with st.container():
                 else:
                     if name == 'Insurance Collections':
                         days_diff = max(0, val - bench)
-                        # DDD/365 * 7% Cost of Capital * Revenue
                         loss = (days_diff / 365) * 0.07 * revenue
                         color = "green" if val <= bench else ("yellow" if val <= (bench * 1.1) else "red")
                     else:
@@ -93,11 +91,10 @@ with st.container():
                         color = "green" if val <= bench else ("yellow" if val <= (bench * 1.1) else "red")
                 results[name] = {'loss': loss, 'color': color}
 
-        # Identify Largest Opportunity
         low_hanging_fruit = max(results, key=lambda x: results[x]['loss'])
         total_loss = sum(item['loss'] for item in results.values())
 
-        # 4. VERDICT RENDERING (Dynamic text based on calculations)
+        # 4. VERDICT RENDERING
         empty_msg = f'<p style="color: #00d2ff; font-weight: bold; margin-top: 10px; font-family: sans-serif;">I see that you left one or more fields. With Pronto, you will have access to all of these numbers at your fingertips each and every day.</p>' if any_empty else ''
         
         verdict_html = f"""
@@ -106,9 +103,6 @@ with st.container():
             <p style="font-size: 1.2rem; font-family: sans-serif;">Pronto discovered that your low hanging fruit is in <b>{low_hanging_fruit}</b></p>
             <p style="font-size: 1.1rem; font-family: sans-serif;">Based on 1.2 million in production, your practice is leaving <b>${total_loss:,.0f}</b> on the table annually.</p>
             {empty_msg}
-            <p style="font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-top: 20px; font-family: sans-serif;">
-                Please fill out the following and we will elaborate on your <b>{low_hanging_fruit}</b> results as well as the other metrics to show you exactly how to close the gap.
-            </p>
         </div>
         """
         st.markdown(verdict_html, unsafe_allow_html=True)
