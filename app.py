@@ -56,15 +56,17 @@ with st.container():
                 time.sleep(1)
             st.write("")
 
-        # 3. CALCULATIONS
+        # 3. CALCULATIONS (Locked to 1.2M Baseline with Updated Benchmarks)
         revenue = 1200000
         results = {}
+        
+        # New Benchmarks per your list
         fields = {
             'EBITDA %': (ebitda_val, 22, 'higher'),
             'Hyg Perio': (hygiene_val, 40, 'higher'),
             'Case Acceptance': (case_val, 95, 'higher'),
-            'Missed Calls': (missed_calls, 10, 'lower'),
-            'No Shows': (no_shows, 6, 'lower'),
+            'Missed Calls': (missed_calls, 7, 'lower'),
+            'No Shows': (no_shows, 5, 'lower'),
             'Insurance Collections': (ins_days, 25, 'lower')
         }
 
@@ -80,8 +82,9 @@ with st.container():
                     color = "green" if val >= bench else ("yellow" if val >= (bench * 0.9) else "red")
                 else:
                     if name == 'Insurance Collections':
-                        days_diff = max(0, val - bench)
-                        loss = (days_diff / 365) * 0.07 * revenue
+                        ddd = max(0, val - bench)
+                        # Formula: DDD / 365 * 0.07 * 1,200,000
+                        loss = (ddd / 365) * 0.07 * revenue
                         color = "green" if val <= bench else ("yellow" if val <= (bench * 1.1) else "red")
                     else:
                         diff = (val / 100) - (bench / 100)
@@ -122,7 +125,7 @@ with st.container():
             </div>
         """, unsafe_allow_html=True)
 
-        # 7. LEAD FORM (Increased height to 700px)
+        # 7. LEAD FORM
         components.html("""
             <iframe src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh" style="width:100%;height:650px;border:none;border-radius:8px" id="inline-iVFg0wteKeXMSEXviPvh" data-form-id="iVFg0wteKeXMSEXviPvh"></iframe>
             <script src="https://link.msgsndr.com/js/form_embed.js"></script>
