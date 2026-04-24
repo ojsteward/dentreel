@@ -37,55 +37,54 @@ st.markdown("""
 st.image("https://assets.cdn.filesafe.space/MCcnQ0ytnakrb0FwnYIM/media/69ea1f539fe87a999456bbe3.png", width=220)
 st.title("Practice Revenue Autopsy™")
 
-# 2. INPUT SECTION (8 Categories)
+# 2. INPUT SECTION (Back to Original 6)
 with st.container():
     col1, col2 = st.columns(2)
     with col1:
-        ebitda = st.number_input("EBITDA %", min_value=0.0, max_value=100.0, value=None)
-        booked_calls = st.number_input("% of New Patient Calls Booked", min_value=0.0, max_value=100.0, value=None)
-        hyg_perio = st.number_input("Hyg Perio %", min_value=0.0, max_value=100.0, value=None)
-        future_appt = st.number_input("% of Patients w/ Future Appt", min_value=0.0, max_value=100.0, value=None)
+        ebitda_val = st.number_input("Current EBITDA %", min_value=0.0, max_value=100.0, value=None)
+        hygiene_val = st.number_input("Hyg Perio %", min_value=0.0, max_value=100.0, value=None)
+        case_val = st.number_input("Case Acceptance %", min_value=0.0, max_value=100.0, value=None)
     with col2:
-        no_show = st.number_input("No Show %", min_value=0.0, max_value=100.0, value=None)
         missed_calls = st.number_input("% of Missed Calls", min_value=0.0, max_value=100.0, value=None)
-        turnover = st.number_input("Employee Turnover %", min_value=0.0, max_value=100.0, value=None)
+        no_shows = st.number_input("No Show %", min_value=0.0, max_value=100.0, value=None)
         ins_days = st.number_input("Days to Collect from Ins", min_value=0, value=None)
 
     if st.button("Generate Autopsy Results"):
+        # 7-Second Thinking Animation
         with st.empty():
             for i in range(7):
                 st.markdown(f"### 🧪 Pronto AI is conducting autopsy... {7-i}s")
                 time.sleep(1)
             st.write("")
 
-        # 3. CALCULATIONS (Locked to 1.2M)
+        # 3. CALCULATIONS (Locked to 1.2M Baseline with New Benchmarks)
         revenue = 1200000
         results = {}
-        # Format: (Value, Benchmark, Direction-Higher-is-Better)
+        
+        # New Benchmarks applied to the 6 fields
         fields = {
-            'EBITDA': (ebitda, 22, True),
-            'NP Calls Booked': (booked_calls, 78, True),
-            'Hyg Perio': (hyg_perio, 40, True),
-            'Future Appts': (future_appt, 85, True),
-            'No Shows': (no_show, 6, False),
-            'Missed Calls': (missed_calls, 10, False),
-            'Employee Turnover': (turnover, 20, False),
-            'Insurance Collections': (ins_days, 25, False)
+            'EBITDA %': (ebitda_val, 22, 'higher'),
+            'Hyg Perio': (hygiene_val, 40, 'higher'),
+            'Case Acceptance': (case_val, 95, 'higher'),
+            'Missed Calls': (missed_calls, 10, 'lower'),
+            'No Shows': (no_shows, 6, 'lower'),
+            'Insurance Collections': (ins_days, 25, 'lower')
         }
 
         any_empty = any(v is None for v, b, d in fields.values())
         
-        for name, (val, bench, higher_is_better) in fields.items():
+        for name, (val, bench, direction) in fields.items():
             if val is None:
                 results[name] = {'loss': 0, 'color': 'white'}
             else:
-                if higher_is_better:
+                if direction == 'higher':
                     diff = (bench / 100) - (val / 100)
                     loss = max(0, diff * revenue)
                     color = "green" if val >= bench else ("yellow" if val >= (bench * 0.9) else "red")
                 else:
                     if name == 'Insurance Collections':
                         days_diff = max(0, val - bench)
+                        # DDD/365 * 7% Cost of Capital * Revenue
                         loss = (days_diff / 365) * 0.07 * revenue
                         color = "green" if val <= bench else ("yellow" if val <= (bench * 1.1) else "red")
                     else:
@@ -94,10 +93,11 @@ with st.container():
                         color = "green" if val <= bench else ("yellow" if val <= (bench * 1.1) else "red")
                 results[name] = {'loss': loss, 'color': color}
 
+        # Identify Largest Opportunity
         low_hanging_fruit = max(results, key=lambda x: results[x]['loss'])
         total_loss = sum(item['loss'] for item in results.values())
 
-        # 4. VERDICT RENDERING
+        # 4. VERDICT RENDERING (Dynamic text based on calculations)
         empty_msg = f'<p style="color: #00d2ff; font-weight: bold; margin-top: 10px; font-family: sans-serif;">I see that you left one or more fields. With Pronto, you will have access to all of these numbers at your fingertips each and every day.</p>' if any_empty else ''
         
         verdict_html = f"""
@@ -113,7 +113,7 @@ with st.container():
         """
         st.markdown(verdict_html, unsafe_allow_html=True)
 
-        # 5. STATUS BOXES
+        # 5. STATUS BLOCKS
         st.markdown('<div class="status-container">', unsafe_allow_html=True)
         for name, data in results.items():
             st.markdown(f'<div class="status-box status-{data["color"]}">{name}</div>', unsafe_allow_html=True)
