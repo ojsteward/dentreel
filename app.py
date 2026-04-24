@@ -93,7 +93,6 @@ with st.container():
         total_loss = sum(item['loss'] for item in results.values())
 
         # 4. VERDICT RENDERING
-        # Updated "left out" message
         empty_msg = f'<p style="color: #00d2ff; font-weight: bold; margin-top: 10px; font-family: sans-serif;">I see that you left out one or more fields. With Pronto, you will have access to all of these numbers at your fingertips each and every day.</p>' if any_empty else ''
         
         verdict_html = f"""
@@ -112,9 +111,10 @@ with st.container():
             st.markdown(f'<div class="status-box status-{data["color"]}">{name}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 6. UPDATED CALL TO ACTION TEXT
+        # 6. CALL TO ACTION TEXT (With orange header restored)
         st.markdown(f"""
             <div style="text-align: center; margin-bottom: 20px; padding: 10px;">
+                <p style="font-size: 1.1rem; color: #ff8c00; font-weight: 700; margin-bottom: 5px;">Ready to examine your office further?</p>
                 <p style="font-size: 1.1rem; color: #ffffff; font-family: sans-serif; line-height: 1.5;">
                     Fill out the form below to get your complete Autopsy with opportunities for each of these 6 categories. 
                     <b>Now imagine if you had 140 of these at your finger tips each and every day.</b>
