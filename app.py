@@ -42,12 +42,14 @@ with st.container():
     col1, col2 = st.columns(2)
     with col1:
         ebitda_val = st.number_input("Current EBITDA %", min_value=0, max_value=100, value=None, step=1)
-        hygiene_val = st.number_input("Hyg Perio %", min_value=0, max_value=100, value=None, step=1)
-        case_val = st.number_input("Case Acceptance %", min_value=0, max_value=100, value=None, step=1)
-    with col2:
-        missed_calls = st.number_input("% of Missed Calls", min_value=0, max_value=100, value=None, step=1)
         no_shows = st.number_input("No Show %", min_value=0, max_value=100, value=None, step=1)
         ins_days = st.number_input("Days to Collect from Ins", min_value=0, value=None, step=1)
+        hire_weeks = st.number_input("Avg Weeks to Hire a Hygienist", min_value=0, value=None, step=1)
+    with col2:
+        hyg_prod_pct = st.number_input("Hygiene Production %", min_value=0, max_value=100, value=None, step=1)
+        hyg_perio_pct = st.number_input("Hygiene Perio %", min_value=0, max_value=100, value=None, step=1)
+        new_patients = st.number_input("# New Patients per Month", min_value=0, value=None, step=1)
+        call_conv_pct = st.number_input("% of Calls Converted to NP", min_value=0, max_value=100, value=None, step=1)
 
     if st.button("Generate Autopsy Results"):
         with st.empty():
@@ -57,43 +59,58 @@ with st.container():
             st.write("")
 
         # 3. CALCULATIONS
-        revenue = 1200000
+        rev = 1200000
         results = {}
-        fields = {
-            'EBITDA %': (ebitda_val, 22, 'higher'),
-            'Hyg Perio': (hygiene_val, 40, 'higher'),
-            'Case Acceptance': (case_val, 95, 'higher'),
-            'Missed Calls': (missed_calls, 7, 'lower'),
-            'No Shows': (no_shows, 5, 'lower'),
-            'Insurance Collections': (ins_days, 25, 'lower')
-        }
-
-        any_empty = any(v is None for v, b, d in fields.values())
         
-        for name, (val, bench, direction) in fields.items():
-            if val is None:
-                results[name] = {'loss': 0, 'color': 'white'}
+        # Helper for color logic
+        def get_color(val, bench, higher_is_better):
+            if val is None: return "white"
+            if higher_is_better:
+                return "green" if val >= bench else ("yellow" if val >= (bench * 0.9) else "red")
             else:
-                if direction == 'higher':
-                    diff = (bench / 100) - (val / 100)
-                    loss = max(0, diff * revenue)
-                    color = "green" if val >= bench else ("yellow" if val >= (bench * 0.9) else "red")
+                return "green" if val <= bench else ("yellow" if val <= (bench * 1.1) else "red")
+
+        # Basic Stats
+        results['EBITDA'] = {'loss': max(0, (22 - (ebitda_val or 22))/100 * rev), 'color': get_color(ebitda_val, 22, True)}
+        results['No Shows'] = {'loss': max(0, ((no_shows or 5) - 5)/100 * rev), 'color': get_color(no_shows, 5, False)}
+        results['Insurance'] = {'loss': max(0, ((ins_days or 25) - 25)/365 * 0.07 * rev), 'color': get_color(ins_days, 25, False)}
+        
+        # Hiring Logic
+        hiring_loss = max(0, ((hire_weeks or 4) - 4) * 5120 - 10000)
+        results['Hiring'] = {'loss': hiring_loss, 'color': get_color(hire_weeks, 4, False)}
+
+        # New Patient Logic
+        np_loss = max(0, (80 - (call_conv_pct or 80))/100 * (new_patients or 0) * 1000 * 12)
+        results['New Patients'] = {'loss': np_loss, 'color': get_color(call_conv_pct, 80, True)}
+
+        # Hygiene Tricky Logic
+        if hyg_prod_pct is not None:
+            # Calculation #5: Hygiene Production
+            hyg_prod_loss = max(0, (30 - hyg_prod_pct)/100 * rev)
+            
+            # Calculation #6: Hygiene Perio %
+            if hyg_perio_pct is not None:
+                bench_perio = 40
+                diff_perio_pct = (bench_perio - hyg_perio_pct) / 100
+                
+                if hyg_prod_pct >= 30:
+                    perio_loss = max(0, diff_perio_pct * (hyg_prod_pct/100) * rev)
                 else:
-                    if name == 'Insurance Collections':
-                        ddd = max(0, val - bench)
-                        loss = (ddd / 365) * 0.07 * revenue
-                        color = "green" if val <= bench else ("yellow" if val <= (bench * 1.1) else "red")
-                    else:
-                        diff = (val / 100) - (bench / 100)
-                        loss = max(0, diff * revenue)
-                        color = "green" if val <= bench else ("yellow" if val <= (bench * 1.1) else "red")
-                results[name] = {'loss': loss, 'color': color}
+                    perio_loss = max(0, (diff_perio_pct * 0.30 * rev) + hyg_prod_loss)
+                
+                results['Hygiene System'] = {'loss': perio_loss, 'color': get_color(hyg_perio_pct, 40, True)}
+            else:
+                results['Hygiene System'] = {'loss': hyg_prod_loss, 'color': 'white'}
+        else:
+            results['Hygiene System'] = {'loss': 0, 'color': 'white', 'msg': "Hygiene production % needed for calculation"}
 
         low_hanging_fruit = max(results, key=lambda x: results[x]['loss'])
         total_loss = sum(item['loss'] for item in results.values())
 
         # 4. VERDICT RENDERING
-        empty_msg = f'<p style="color: #00d2ff; font-weight: bold; margin-top: 10px; font-family: sans-serif;">I see that you left out one or more fields. With Pronto, you will have access to all of these numbers at your fingertips each and every day.</p>' if any_empty else ''
+        any_empty = any(v is None for v in [ebitda_val, no_shows, ins_days, hire_weeks, hyg_prod_pct, hyg_perio_pct, new_patients, call_conv_pct])
+        
+        empty_msg = f'<p style="color: #00d2ff; font-weight: bold; margin-top: 10px; font-family: sans-serif;">Looks like some fields were skipped. That’s exactly how blind spots happen. Pronto eliminates the guesswork by giving you complete, real-time access to every metric that drives your practice...daily...automatically.</p>' if any_empty else ''
         
         verdict_html = f"""
         <div class="report-card">
@@ -108,16 +125,22 @@ with st.container():
         # 5. STATUS BLOCKS
         st.markdown('<div class="status-container">', unsafe_allow_html=True)
         for name, data in results.items():
-            st.markdown(f'<div class="status-box status-{data["color"]}">{name}</div>', unsafe_allow_html=True)
+            display_name = data.get('msg', name)
+            st.markdown(f'<div class="status-box status-{data["color"]}">{display_name}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 6. CALL TO ACTION TEXT (With orange header restored)
+        # 6. UPDATED CTA TEXT
         st.markdown(f"""
             <div style="text-align: center; margin-bottom: 20px; padding: 10px;">
-                <p style="font-size: 1.1rem; color: #ff8c00; font-weight: 700; margin-bottom: 5px;">Ready to examine your office further?</p>
+                <p style="font-size: 1.2rem; color: #ff8c00; font-weight: 700; margin-bottom: 10px;">“You just got a glimpse.”</p>
                 <p style="font-size: 1.1rem; color: #ffffff; font-family: sans-serif; line-height: 1.5;">
-                    Fill out the form below to get your complete Autopsy with opportunities for each of these 6 categories. 
-                    <b>Now imagine if you had 140 of these at your finger tips each and every day.</b>
+                    Now let’s find what you’re actually missing. Fill out the form below to unlock your full Practice Autopsy—breaking down exactly where revenue is leaking across all 6 categories.<br><br>
+                    <b>Because if this much showed up from a few inputs… what do you think happens when you’re tracking 140+ metrics in real time?</b>
+                </p>
+            </div>
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ff4500;">
+                <p style="font-size: 0.85rem; color: #cccccc; font-style: italic; font-family: sans-serif; margin: 0;">
+                    <b>Disclaimer:</b> These results aren’t meant to be perfect—they’re meant to be revealing. We’ve taken your inputs and applied industry benchmarks to surface likely gaps. But without real-time data integration, there are variables we simply can’t see. Pronto doesn’t guess. It knows. This is the preview… not the movie.
                 </p>
             </div>
         """, unsafe_allow_html=True)
