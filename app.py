@@ -43,64 +43,73 @@ with st.container():
 
     if st.button("Generate Autopsy Results"):
         
-        # 3. THE ANALYTICS ENGINE (Strict Isolation)
-        # We only add to 'active_metrics' if the user provided a value.
         active_metrics = {}
         REV_BASE = 1200000
 
         # EBITDA: Bench 22%
         if in_eb is not None:
-            v_gap = max(0.0, 22.0 - in_eb)
-            active_metrics['EBITDA'] = {'gap': v_gap, 'loss': (v_gap/100)*REV_BASE, 'color': "green" if in_eb >= 22 else "red"}
+            gap = max(0.0, 22.0 - in_eb)
+            # If EBITDA is 15%, loss is calculated. If 60%, loss is 0.
+            loss = (gap / 100) * REV_BASE if in_eb < 22 else 0.0
+            active_metrics['EBITDA'] = {'gap': gap, 'loss': loss, 'status': "red" if in_eb < 22 else "green"}
 
         # No Shows: Bench 5%
         if in_ns is not None:
-            v_gap = max(0.0, in_ns - 5.0)
-            active_metrics['No Shows'] = {'gap': v_gap, 'loss': (v_gap/100)*REV_BASE, 'color': "green" if in_ns <= 5 else "red"}
+            gap = max(0.0, in_ns - 5.0)
+            loss = (gap / 100) * REV_BASE if in_ns > 5 else 0.0
+            active_metrics['No Shows'] = {'gap': gap, 'loss': loss, 'status': "red" if in_ns > 5 else "green"}
 
-        # Insurance: Bench 25 days (Gap normalized to 100-scale for fair comparison)
+        # Insurance: Bench 25 days
         if in_id is not None:
-            raw_day_gap = max(0.0, in_id - 25.0)
-            active_metrics['Insurance'] = {'gap': raw_day_gap, 'loss': (raw_day_gap/365)*0.07*REV_BASE, 'color': "green" if in_id <= 25 else "red"}
+            gap = max(0.0, in_id - 25.0)
+            loss = (gap / 365) * 0.07 * REV_BASE if in_id > 25 else 0.0
+            active_metrics['Insurance'] = {'gap': gap, 'loss': loss, 'status': "red" if in_id > 25 else "green"}
 
         # Hiring: Bench 4 weeks
         if in_hw is not None:
-            raw_wk_gap = max(0.0, in_hw - 4.0)
-            active_metrics['Hiring'] = {'gap': raw_wk_gap, 'loss': (raw_wk_gap*5120)-10000 if raw_wk_gap > 0 else 0, 'color': "green" if in_hw <= 4 else "red"}
+            gap = max(0.0, in_hw - 4.0)
+            loss = (gap * 5120) - 10000 if in_hw > 4 else 0.0
+            active_metrics['Hiring'] = {'gap': gap, 'loss': max(0.0, loss), 'status': "red" if in_hw > 4 else "green"}
 
-        # NP Conversion: Bench 80% (Dependent on NP Count)
+        # NP Conversion: DEPENDENCY (Calls + NP Count)
         if in_cp is not None and in_np is not None:
-            v_gap = max(0.0, 80.0 - in_cp)
-            active_metrics['Patient Conversion'] = {'gap': v_gap, 'loss': (v_gap/100)*in_np*1000*12, 'color': "green" if in_cp >= 80 else "red"}
+            gap = max(0.0, 80.0 - in_cp)
+            loss = (gap / 100) * in_np * 1000 * 12 if in_cp < 80 else 0.0
+            active_metrics['Patient Conversion'] = {'gap': gap, 'loss': loss, 'status': "red" if in_cp < 80 else "green"}
 
-        # Hygiene System (Perio depends on Production)
+        # Hygiene System: DEPENDENCY (Prod + Perio)
         if in_hp is not None:
-            prod_gap = max(0.0, 30.0 - in_hp)
-            active_metrics['Hygiene Production'] = {'gap': prod_gap, 'loss': (prod_gap/100)*REV_BASE, 'color': "green" if in_hp >= 30 else "red"}
+            hp_gap = max(0.0, 30.0 - in_hp)
+            hp_loss = (hp_gap / 100) * REV_BASE if in_hp < 30 else 0.0
+            active_metrics['Hygiene Production'] = {'gap': hp_gap, 'loss': hp_loss, 'status': "red" if in_hp < 30 else "green"}
             
             if in_per is not None:
                 per_gap = max(0.0, 40.0 - in_per)
-                # Base is dictated by their production level
-                h_base = (in_hp/100)*REV_BASE if in_hp >= 30 else (0.30*REV_BASE)
-                active_metrics['Hygiene Perio'] = {'gap': per_gap, 'loss': (per_gap/100)*h_base, 'color': "green" if in_per >= 40 else "red"}
+                # Math dependency on production level
+                h_base = (in_hp / 100) * REV_BASE if in_hp >= 30 else (0.30 * REV_BASE)
+                per_loss = (per_gap / 100) * h_base if in_per < 40 else 0.0
+                active_metrics['Hygiene Perio'] = {'gap': per_gap, 'loss': per_loss, 'status': "red" if in_per < 40 else "green"}
 
-        # 4. THE VERDICT (Comparison ONLY across Active Inputs)
+        # 4. FINAL VERDICT LOGIC
         if active_metrics:
-            # We identify the winner by the 'gap' (furthest from benchmark)
+            # Low Hanging Fruit = The entry with the largest 'gap'
             winner = max(active_metrics, key=lambda k: active_metrics[k]['gap'])
-            total_loss = sum(m['loss'] for m in active_metrics.values())
+            
+            # TOTAL LEAKAGE = Only sum areas that are actually failing (Status RED)
+            # This prevents a "Green" EBITDA from adding noise to the total number.
+            total_leakage = sum(m['loss'] for m in active_metrics.values() if m['status'] == "red")
 
             st.markdown(f"""
             <div class="report-card">
                 <h1 style="color: #ffffff; margin-top:0;">The Verdict</h1>
-                <p style="font-size: 1.2rem;">Based on your current data, your furthest variance is in <b>{winner}</b>.</p>
-                <p style="font-size: 1.1rem;">Across all provided metrics, your annual revenue leakage is <b>${total_loss:,.0f}</b>.</p>
+                <p style="font-size: 1.2rem;">Your furthest variance from benchmark is <b>{winner}</b>.</p>
+                <p style="font-size: 1.1rem;">Your estimated annual revenue leakage is <b>${total_leakage:,.0f}</b>.</p>
             </div>
             """, unsafe_allow_html=True)
 
             st.markdown('<div class="status-container">', unsafe_allow_html=True)
             for label, d in active_metrics.items():
-                st.markdown(f'<div class="status-box status-{d["color"]}">{label}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="status-box status-{d["status"]}">{label}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # 5. GHL FORM
