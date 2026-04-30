@@ -2,33 +2,25 @@ import streamlit as st
 import streamlit.components.v1 as components
 import time
 
-# 1. SETUP & BRANDING
+# 1. SETUP
 st.set_page_config(page_title="Pronto | Practice Revenue Autopsy", page_icon="📈", layout="centered")
 
 st.markdown("""
     <style>
     .stApp { background-color: #001e36; color: #ffffff; }
     .stNumberInput label { color: #ffffff !important; font-weight: 600; }
-    
     div.stButton > button:first-child {
         background: linear-gradient(90deg, #ff8c00 0%, #ff4500 100%);
         color: white; border: none; padding: 18px 30px; border-radius: 8px;
         font-weight: 800; width: 100%; transition: 0.3s;
         text-transform: uppercase; letter-spacing: 1px;
     }
-
-    .report-card { 
-        background: rgba(255, 255, 255, 0.05); 
-        padding: 30px; border-radius: 15px; 
-        border: 2px solid #00d2ff; text-align: center; margin-bottom: 30px;
-    }
-
+    .report-card { background: rgba(255, 255, 255, 0.05); padding: 30px; border-radius: 15px; border: 2px solid #00d2ff; text-align: center; margin-bottom: 30px; }
     .status-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
     .status-box { padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; font-size: 0.8rem; border: 2px solid transparent; text-transform: uppercase; }
     .status-green { border-color: #28a745; background: rgba(40, 167, 69, 0.1); color: #28a745; }
     .status-red { border-color: #dc3545; background: rgba(220, 53, 69, 0.1); color: #dc3545; }
     .status-white { border-color: #ffffff; background: rgba(255, 255, 255, 0.1); color: #ffffff; }
-
     #MainMenu, footer, header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
@@ -36,112 +28,105 @@ st.markdown("""
 st.image("https://assets.cdn.filesafe.space/MCcnQ0ytnakrb0FwnYIM/media/69ea1f539fe87a999456bbe3.png", width=220)
 st.title("Practice Revenue Autopsy™")
 
-# 2. INPUT SECTION - Hard Coded Keys for Isolation
+# 2. ISOLATED INPUTS
 with st.container():
-    col1, col2 = st.columns(2)
-    with col1:
-        u_ebitda = st.number_input("Current EBITDA %", min_value=0, max_value=100, value=None, step=1, key="unique_ebitda")
-        u_noshow = st.number_input("No Show %", min_value=0, max_value=100, value=None, step=1, key="unique_noshow")
-        u_ins_days = st.number_input("Days to Collect from Ins", min_value=0, value=None, step=1, key="unique_ins")
-        u_hire_wks = st.number_input("Avg Weeks to Hire a Hygienist", min_value=0, value=None, step=1, key="unique_hire")
-    with col2:
-        u_hyg_prod = st.number_input("Hygiene Production %", min_value=0, max_value=100, value=None, step=1, key="unique_hprod")
-        u_hyg_perio = st.number_input("Hygiene Perio %", min_value=0, max_value=100, value=None, step=1, key="unique_hperio")
-        u_np_count = st.number_input("# New Patients per Month", min_value=0, value=None, step=1, key="unique_npcount")
-        u_conv_pct = st.number_input("% of Calls Converted to NP", min_value=0, max_value=100, value=None, step=1, key="unique_conv")
+    c1, c2 = st.columns(2)
+    with c1:
+        # We use strict session keys to prevent cross-talk
+        eb_in = st.number_input("Current EBITDA %", min_value=0, max_value=100, value=None, step=1, key="eb_val")
+        ns_in = st.number_input("No Show %", min_value=0, max_value=100, value=None, step=1, key="ns_val")
+        id_in = st.number_input("Days to Collect from Ins", min_value=0, value=None, step=1, key="id_val")
+        hw_in = st.number_input("Avg Weeks to Hire a Hygienist", min_value=0, value=None, step=1, key="hw_val")
+    with c2:
+        hp_in = st.number_input("Hygiene Production %", min_value=0, max_value=100, value=None, step=1, key="hp_val")
+        hper_in = st.number_input("Hygiene Perio %", min_value=0, max_value=100, value=None, step=1, key="hper_val")
+        np_in = st.number_input("# New Patients per Month", min_value=0, value=None, step=1, key="np_val")
+        cp_in = st.number_input("% of Calls Converted to NP", min_value=0, max_value=100, value=None, step=1, key="cp_val")
 
     if st.button("Generate Autopsy Results"):
         with st.empty():
-            for i in range(7):
-                st.markdown(f"### 🧪 Pronto AI is conducting autopsy... {7-i}s")
+            for i in range(5):
+                st.markdown(f"### 🧪 Pronto AI is conducting autopsy... {5-i}s")
                 time.sleep(1)
-            st.write("")
+        
+        # 3. QUARANTINED MATH ENGINE (Variables defined only inside this scope)
+        BASE_REV = 1200000
+        output = {}
 
-        # 3. THE QUARANTINED MATH ENGINE
-        FIXED_REVENUE = 1200000
-        final_results = {}
+        # EBITDA
+        if eb_in is not None:
+            eb_loss = max(0.0, (22 - eb_in) / 100 * BASE_REV)
+            output['EBITDA'] = {'loss': eb_loss, 'color': "green" if eb_in >= 22 else "red"}
 
-        # EBITDA - Isolated
-        val_eb = u_ebitda if u_ebitda is not None else 22
-        loss_eb = max(0.0, (22 - val_eb) / 100 * FIXED_REVENUE)
-        final_results['EBITDA'] = {'loss': loss_eb, 'color': "green" if val_eb >= 22 else "red" if u_ebitda is not None else "white"}
+        # No Shows
+        if ns_in is not None:
+            ns_loss = max(0.0, (ns_in - 5) / 100 * BASE_REV)
+            output['No Shows'] = {'loss': ns_loss, 'color': "green" if ns_in <= 5 else "red"}
 
-        # No Shows - Isolated
-        val_ns = u_noshow if u_noshow is not None else 5
-        loss_ns = max(0.0, (val_ns - 5) / 100 * FIXED_REVENUE)
-        final_results['No Shows'] = {'loss': loss_ns, 'color': "green" if val_ns <= 5 else "red" if u_noshow is not None else "white"}
+        # Insurance
+        if id_in is not None:
+            ins_loss = max(0.0, (id_in - 25) / 365 * 0.07 * BASE_REV)
+            output['Insurance'] = {'loss': ins_loss, 'color': "green" if id_in <= 25 else "red"}
 
-        # Insurance - Isolated
-        val_ins = u_ins_days if u_ins_days is not None else 25
-        loss_ins = max(0.0, (val_ins - 25) / 365 * 0.07 * FIXED_REVENUE)
-        final_results['Insurance'] = {'loss': loss_ins, 'color': "green" if val_ins <= 25 else "red" if u_ins_days is not None else "white"}
+        # Hiring
+        if hw_in is not None:
+            hr_loss = max(0.0, (hw_in - 4) * 5120 - 10000)
+            output['Hiring'] = {'loss': hr_loss, 'color': "green" if hw_in <= 4 else "red"}
 
-        # Hiring - Isolated
-        val_hw = u_hire_wks if u_hire_wks is not None else 4
-        loss_hw = max(0.0, (val_hw - 4) * 5120 - 10000)
-        final_results['Hiring'] = {'loss': loss_hw, 'color': "green" if val_hw <= 4 else "red" if u_hire_wks is not None else "white"}
+        # New Patients
+        if cp_in is not None and np_in is not None:
+            np_loss = max(0.0, (80 - cp_in) / 100 * np_in * 1000 * 12)
+            output['New Patients'] = {'loss': np_loss, 'color': "green" if cp_in >= 80 else "red"}
 
-        # Patient Conversion - Isolated
-        val_cp = u_conv_pct if u_conv_pct is not None else 80
-        val_np = u_np_count if u_np_count is not None else 0
-        loss_np = max(0.0, (80 - val_cp) / 100 * val_np * 1000 * 12)
-        final_results['Patient Conversion'] = {'loss': loss_np, 'color': "green" if val_cp >= 80 else "red" if u_conv_pct is not None else "white"}
+        # HYGIENE PRODUCTION (Calculation #5)
+        loss_5 = 0.0
+        if hp_in is not None:
+            loss_5 = max(0.0, (30 - hp_in) / 100 * BASE_REV)
+            output['Hygiene Production'] = {'loss': loss_5, 'color': "green" if hp_in >= 30 else "red"}
 
-        # HYGIENE PRODUCTION - Isolated
-        loss_h_prod = 0.0
-        if u_hyg_prod is not None:
-            loss_h_prod = max(0.0, (30 - u_hyg_prod) / 100 * FIXED_REVENUE)
-            final_results['Hygiene Production'] = {'loss': loss_h_prod, 'color': "green" if u_hyg_prod >= 30 else "red"}
-        else:
-            final_results['Hygiene Production'] = {'loss': 0.0, 'color': 'white'}
-
-        # HYGIENE PERIO - Isolated (Only looks at u_hyg_perio and u_hyg_prod)
-        loss_h_perio = 0.0
-        if u_hyg_perio is not None:
-            p_diff = (40 - u_hyg_perio) / 100
-            # Determination of base for math
-            if u_hyg_prod is not None and u_hyg_prod >= 30:
-                base_val = (u_hyg_prod / 100) * FIXED_REVENUE
-                loss_h_perio = max(0.0, p_diff * base_val)
-            else:
-                # If prod is low or missing, use benchmark 30% revenue base
-                base_val = 0.30 * FIXED_REVENUE
-                # Strictly using only the perio diff + the calculated prod loss (if any)
-                loss_h_perio = max(0.0, (p_diff * base_val) + loss_h_prod)
+        # HYGIENE PERIO (Calculation #6 - THE LEAK STOPPER)
+        if hper_in is not None:
+            p_diff = (40 - hper_in) / 100
             
-            final_results['Hygiene Perio'] = {'loss': loss_h_perio, 'color': "green" if u_hyg_perio >= 40 else "red"}
-        else:
-            final_results['Hygiene Perio'] = {'loss': 0.0, 'color': 'white'}
+            # Here is the fix: We use the literal input values ONLY.
+            # No reference to the EBITDA variable or any other category result.
+            if hp_in is not None and hp_in >= 30:
+                # Use their actual hygiene production
+                perio_math = p_diff * (hp_in / 100) * BASE_REV
+            else:
+                # Use the benchmark 30% and add the production gap
+                # loss_5 is defined locally right above, it cannot see EBITDA.
+                perio_math = (p_diff * 0.30 * BASE_REV) + loss_5
+            
+            output['Hygiene Perio'] = {'loss': max(0.0, perio_math), 'color': "green" if hper_in >= 40 else "red"}
 
-        # Summary Generation
-        fruit_key = max(final_results, key=lambda x: final_results[x]['loss'])
-        total_practice_loss = sum(v['loss'] for v in final_results.values())
+        # 4. RESULTS DISPLAY
+        if output:
+            fruit = max(output, key=lambda x: output[x]['loss'])
+            total_sum = sum(v['loss'] for v in output.values())
+            
+            any_skipped = any(v is None for v in [eb_in, ns_in, id_in, hw_in, hp_in, hper_in, np_in, cp_in])
+            skip_msg = f'<p style="color: #00d2ff; font-weight: bold; font-family: sans-serif;">Looks like some fields were skipped. That’s exactly how blind spots happen. Pronto eliminates the guesswork by giving you complete, real-time access to every metric that drives your practice...daily...automatically.</p>' if any_skipped else ''
 
-        # 4. RENDERING THE RESULTS
-        has_skips = any(v is None for v in [u_ebitda, u_noshow, u_ins_days, u_hire_wks, u_hyg_prod, u_hyg_perio, u_np_count, u_conv_pct])
-        
-        skip_notice = f'<p style="color: #00d2ff; font-weight: bold; margin-top: 10px; font-family: sans-serif;">Looks like some fields were skipped. That’s exactly how blind spots happen. Pronto eliminates the guesswork by giving you complete, real-time access to every metric that drives your practice...daily...automatically.</p>' if has_skips else ''
-        
-        st.markdown(f"""
-        <div class="report-card">
-            <h1 style="color: #ffffff; margin-top:0; font-family: sans-serif;">The Verdict</h1>
-            <p style="font-size: 1.2rem; font-family: sans-serif;">Pronto discovered that your low hanging fruit is in <b>{fruit_key}</b></p>
-            <p style="font-size: 1.1rem; font-family: sans-serif;">Based on 1.2 million in production, your practice is leaving <b>${total_practice_loss:,.0f}</b> on the table annually.</p>
-            {skip_notice}
-        </div>
-        """, unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class="report-card">
+                <h1 style="color: #ffffff; margin-top:0; font-family: sans-serif;">The Verdict</h1>
+                <p style="font-size: 1.2rem; font-family: sans-serif;">Pronto discovered that your low hanging fruit is in <b>{fruit}</b></p>
+                <p style="font-size: 1.1rem; font-family: sans-serif;">Based on 1.2 million in production, your practice is leaving <b>${total_sum:,.0f}</b> on the table annually.</p>
+                {skip_msg}
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.markdown('<div class="status-container">', unsafe_allow_html=True)
-        for label, data in final_results.items():
-            if data['color'] != 'white' or label in ['Hygiene Production', 'Hygiene Perio']:
-                st.markdown(f'<div class="status-box status-{data["color"]}">{label}</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('<div class="status-container">', unsafe_allow_html=True)
+            for k, v in output.items():
+                st.markdown(f'<div class="status-box status-{v["color"]}">{k}</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
         # 5. CTA & DISCLAIMER
         st.markdown(f"""
             <div style="text-align: center; margin-bottom: 20px; padding: 10px;">
-                <p style="font-size: 1.2rem; color: #ff8c00; font-weight: 700; margin-bottom: 10px;">“You just got a glimpse.”</p>
-                <p style="font-size: 1.1rem; color: #ffffff; font-family: sans-serif; line-height: 1.5;">
+                <p style="font-size: 1.2rem; color: #ff8c00; font-weight: 700;">“You just got a glimpse.”</p>
+                <p style="font-size: 1.1rem; color: #ffffff; font-family: sans-serif;">
                     Now let’s find what you’re actually missing. Fill out the form below to unlock your full Practice Autopsy—breaking down exactly where revenue is leaking across all 6 categories.<br><br>
                     <b>Because if this much showed up from a few inputs… what do you think happens when you’re tracking 140+ metrics in real time?</b>
                 </p>
@@ -154,6 +139,6 @@ with st.container():
         """, unsafe_allow_html=True)
 
         components.html("""
-            <iframe src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh" style="width:100%;height:650px;border:none;border-radius:8px" id="inline-iVFg0wteKeXMSEXviPvh" data-form-id="iVFg0wteKeXMSEXviPvh"></iframe>
+            <iframe src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh" style="width:100%;height:600px;border:none;border-radius:8px"></iframe>
             <script src="https://link.msgsndr.com/js/form_embed.js"></script>
-        """, height=700)
+        """, height=650)
