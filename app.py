@@ -42,71 +42,73 @@ with st.container():
 
     if st.button("Generate Autopsy Results"):
         
-        RESULTS = {}
+        # 3. THE SILO ENGINE
+        FINAL_RESULTS = {}
         REV_BASE = 1200000
 
-        # --- INDEPENDENT SILOS ---
-
-        # 1. EBITDA
+        # --- SILO 1: EBITDA ---
         if v_eb is not None:
-            eb_loss = ((22 - v_eb) / 100 * REV_BASE) if v_eb < 22 else 0
-            RESULTS['EBITDA'] = {'loss': eb_loss, 'status': "red" if v_eb < 22 else "green"}
+            loss = ((22 - v_eb) / 100 * REV_BASE) if v_eb < 22 else 0
+            FINAL_RESULTS['EBITDA'] = {'loss': loss, 'status': "red" if v_eb < 22 else "green"}
 
-        # 2. No Shows
+        # --- SILO 2: NO SHOWS ---
         if v_ns is not None:
-            ns_loss = ((v_ns - 5) / 100 * REV_BASE) if v_ns > 5 else 0
-            RESULTS['No Shows'] = {'loss': ns_loss, 'status': "red" if v_ns > 5 else "green"}
+            loss = ((v_ns - 5) / 100 * REV_BASE) if v_ns > 5 else 0
+            FINAL_RESULTS['No Shows'] = {'loss': loss, 'status': "red" if v_ns > 5 else "green"}
 
-        # 3. Insurance
+        # --- SILO 3: INSURANCE ---
         if v_id is not None:
-            ins_loss = ((v_id - 25) / 365 * 0.07 * REV_BASE) if v_id > 25 else 0
-            RESULTS['Insurance'] = {'loss': ins_loss, 'status': "red" if v_id > 25 else "green"}
+            loss = ((v_id - 25) / 365 * 0.07 * REV_BASE) if v_id > 25 else 0
+            FINAL_RESULTS['Insurance'] = {'loss': loss, 'status': "red" if v_id > 25 else "green"}
 
-        # 4. Hiring
+        # --- SILO 4: HIRING ---
         if v_hw is not None:
-            hw_loss = max(0, ((v_hw - 4) * 5120) - 10000) if v_hw > 4 else 0
-            RESULTS['Hiring'] = {'loss': hw_loss, 'status': "red" if v_hw > 4 else "green"}
+            raw = ((v_hw - 4) * 5120) - 10000 if v_hw > 4 else 0
+            FINAL_RESULTS['Hiring'] = {'loss': max(0, raw), 'status': "red" if v_hw > 4 else "green"}
 
-        # 5. Patient Conversion (Combines NP Count + Conv %)
-        if v_cp is not None and v_np is not None:
-            cp_loss = ((80 - v_cp) / 100 * v_np * 1000 * 12) if v_cp < 80 else 0
-            RESULTS['Patient Conversion'] = {'loss': cp_loss, 'status': "red" if v_cp < 80 else "green"}
+        # --- SILO 5: PATIENT CONVERSION (COMBINED) ---
+        # Calculation uses BOTH inputs to create ONE result
+        if v_np is not None and v_cp is not None:
+            loss = ((80 - v_cp) / 100 * v_np * 1000 * 12) if v_cp < 80 else 0
+            FINAL_RESULTS['Patient Conversion'] = {'loss': loss, 'status': "red" if v_cp < 80 else "green"}
 
-        # 6. COMBINED HYGIENE SYSTEM (Combines Prod % + Perio %)
+        # --- SILO 6: HYGIENE SYSTEM (COMBINED) ---
+        # Calculation uses BOTH inputs to create ONE result
         if v_hp is not None and v_per is not None:
-            # Calc Production component
-            hp_loss = ((30 - v_hp) / 100 * REV_BASE) if v_hp < 30 else 0
-            # Calc Perio component (Base dependent on production)
+            prod_loss = ((30 - v_hp) / 100 * REV_BASE) if v_hp < 30 else 0
             h_base = (v_hp / 100 * REV_BASE) if v_hp >= 30 else (0.30 * REV_BASE)
-            per_loss = ((40 - v_per) / 100 * h_base) if v_per < 40 else 0
+            perio_loss = ((40 - v_per) / 100 * h_base) if v_per < 40 else 0
             
-            total_hyg_loss = hp_loss + per_loss
-            RESULTS['Hygiene System'] = {
-                'loss': total_hyg_loss, 
+            total_h_loss = prod_loss + perio_loss
+            FINAL_RESULTS['Hygiene System'] = {
+                'loss': total_h_loss, 
                 'status': "red" if (v_hp < 30 or v_per < 40) else "green"
             }
 
-        # --- THE VERDICT ---
-        if RESULTS:
-            red_items = {k: v for k, v in RESULTS.items() if v['status'] == "red"}
+        # --- THE VERDICT (WINNER TAKE ALL) ---
+        if FINAL_RESULTS:
+            # Only look at the RED categories
+            failing = {k: v for k, v in FINAL_RESULTS.items() if v['status'] == "red"}
             
-            if red_items:
-                winner_key = max(red_items, key=lambda k: red_items[k]['loss'])
-                winner_loss = red_items[winner_key]['loss']
+            if failing:
+                # The "Verdict" is strictly the category with the highest loss
+                winner_key = max(failing, key=lambda k: failing[k]['loss'])
+                winner_loss = failing[winner_key]['loss']
             else:
-                winner_key = "Benchmarks Met"
+                winner_key = "Practice Optimized"
                 winner_loss = 0
 
             st.markdown(f"""
             <div class="report-card">
                 <h1 style="color: #ffffff; margin-top:0;">The Verdict</h1>
-                <p style="font-size: 1.2rem;">Your single greatest financial leak is <b>{winner_key}</b>.</p>
-                <p style="font-size: 1.1rem;">This area is costing your office <b>${winner_loss:,.0f}</b> annually.</p>
+                <p style="font-size: 1.2rem;">Your primary revenue leak is <b>{winner_key}</b>.</p>
+                <p style="font-size: 1.1rem;">This specific area is costing your office <b>${winner_loss:,.0f}</b> annually.</p>
             </div>
             """, unsafe_allow_html=True)
 
+            # Status Boxes
             st.markdown('<div class="status-container">', unsafe_allow_html=True)
-            for label, data in RESULTS.items():
+            for label, data in FINAL_RESULTS.items():
                 st.markdown(f'<div class="status-box status-{data["status"]}">{label}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
