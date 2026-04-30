@@ -41,15 +41,15 @@ st.title("Practice Revenue Autopsy™")
 with st.container():
     col1, col2 = st.columns(2)
     with col1:
-        ebitda_val = st.number_input("Current EBITDA %", min_value=0, max_value=100, value=None, step=1)
-        no_shows = st.number_input("No Show %", min_value=0, max_value=100, value=None, step=1)
-        ins_days = st.number_input("Days to Collect from Ins", min_value=0, value=None, step=1)
-        hire_weeks = st.number_input("Avg Weeks to Hire a Hygienist", min_value=0, value=None, step=1)
+        ebitda_input = st.number_input("Current EBITDA %", min_value=0, max_value=100, value=None, step=1)
+        no_shows_input = st.number_input("No Show %", min_value=0, max_value=100, value=None, step=1)
+        ins_days_input = st.number_input("Days to Collect from Ins", min_value=0, value=None, step=1)
+        hire_weeks_input = st.number_input("Avg Weeks to Hire a Hygienist", min_value=0, value=None, step=1)
     with col2:
-        hyg_prod_pct = st.number_input("Hygiene Production %", min_value=0, max_value=100, value=None, step=1)
-        hyg_perio_pct = st.number_input("Hygiene Perio %", min_value=0, max_value=100, value=None, step=1)
-        new_patients = st.number_input("# New Patients per Month", min_value=0, value=None, step=1)
-        call_conv_pct = st.number_input("% of Calls Converted to NP", min_value=0, max_value=100, value=None, step=1)
+        hyg_prod_input = st.number_input("Hygiene Production %", min_value=0, max_value=100, value=None, step=1)
+        hyg_perio_input = st.number_input("Hygiene Perio %", min_value=0, max_value=100, value=None, step=1)
+        np_input = st.number_input("# New Patients per Month", min_value=0, value=None, step=1)
+        conv_input = st.number_input("% of Calls Converted to NP", min_value=0, max_value=100, value=None, step=1)
 
     if st.button("Generate Autopsy Results"):
         with st.empty():
@@ -58,78 +58,81 @@ with st.container():
                 time.sleep(1)
             st.write("")
 
-        # 3. CALCULATIONS
-        rev = 1200000
-        results = {}
+        # 3. FIXED CALCULATIONS (Isolated Constants)
+        REV_BASELINE = 1200000
+        category_results = {}
+
+        # EBITDA Calculation
+        eb_loss = max(0, (22 - (ebitda_input or 22)) / 100 * REV_BASELINE)
+        eb_color = "green" if (ebitda_input or 0) >= 22 else ("yellow" if (ebitda_input or 0) >= 20 else "red")
+        category_results['EBITDA'] = {'loss': eb_loss, 'color': eb_color if ebitda_input is not None else 'white'}
+
+        # No Shows Calculation
+        ns_loss = max(0, ((no_shows_input or 5) - 5) / 100 * REV_BASELINE)
+        ns_color = "green" if (no_shows_input or 0) <= 5 else ("yellow" if (no_shows_input or 0) <= 6 else "red")
+        category_results['No Shows'] = {'loss': ns_loss, 'color': ns_color if no_shows_input is not None else 'white'}
+
+        # Insurance Days Calculation
+        ins_loss = max(0, ((ins_days_input or 25) - 25) / 365 * 0.07 * REV_BASELINE)
+        ins_color = "green" if (ins_days_input or 0) <= 25 else ("yellow" if (ins_days_input or 0) <= 28 else "red")
+        category_results['Insurance'] = {'loss': ins_loss, 'color': ins_color if ins_days_input is not None else 'white'}
+
+        # Hiring Calculation
+        hi_loss = max(0, ((hire_weeks_input or 4) - 4) * 5120 - 10000)
+        hi_color = "green" if (hire_weeks_input or 0) <= 4 else ("yellow" if (hire_weeks_input or 0) <= 6 else "red")
+        category_results['Hiring'] = {'loss': hi_loss, 'color': hi_color if hire_weeks_input is not None else 'white'}
+
+        # New Patient Conversion Calculation
+        np_loss = max(0, (80 - (conv_input or 80)) / 100 * (np_input or 0) * 1000 * 12)
+        np_color = "green" if (conv_input or 0) >= 80 else ("yellow" if (conv_input or 0) >= 75 else "red")
+        category_results['Patient Conversion'] = {'loss': np_loss, 'color': np_color if conv_input is not None else 'white'}
+
+        # HYGIENE SYSTEM MATH (Isolated from EBITDA)
+        h_prod_loss = 0
+        h_perio_loss = 0
         
-        # Helper for color logic
-        def get_color(val, bench, higher_is_better):
-            if val is None: return "white"
-            if higher_is_better:
-                return "green" if val >= bench else ("yellow" if val >= (bench * 0.9) else "red")
-            else:
-                return "green" if val <= bench else ("yellow" if val <= (bench * 1.1) else "red")
-
-        # Basic Stats
-        results['EBITDA'] = {'loss': max(0, (22 - (ebitda_val or 22))/100 * rev), 'color': get_color(ebitda_val, 22, True)}
-        results['No Shows'] = {'loss': max(0, ((no_shows or 5) - 5)/100 * rev), 'color': get_color(no_shows, 5, False)}
-        results['Insurance'] = {'loss': max(0, ((ins_days or 25) - 25)/365 * 0.07 * rev), 'color': get_color(ins_days, 25, False)}
-        
-        # Hiring Logic
-        hiring_loss = max(0, ((hire_weeks or 4) - 4) * 5120 - 10000)
-        results['Hiring'] = {'loss': hiring_loss, 'color': get_color(hire_weeks, 4, False)}
-
-        # New Patient Logic
-        np_loss = max(0, (80 - (call_conv_pct or 80))/100 * (new_patients or 0) * 1000 * 12)
-        results['New Patients'] = {'loss': np_loss, 'color': get_color(call_conv_pct, 80, True)}
-
-        # Hygiene Tricky Logic
-        if hyg_prod_pct is not None:
-            # Calculation #5: Hygiene Production
-            hyg_prod_loss = max(0, (30 - hyg_prod_pct)/100 * rev)
+        if hyg_prod_input is not None:
+            h_prod_loss = max(0, (30 - hyg_prod_input) / 100 * REV_BASELINE)
             
-            # Calculation #6: Hygiene Perio %
-            if hyg_perio_pct is not None:
-                bench_perio = 40
-                diff_perio_pct = (bench_perio - hyg_perio_pct) / 100
-                
-                if hyg_prod_pct >= 30:
-                    perio_loss = max(0, diff_perio_pct * (hyg_prod_pct/100) * rev)
+            if hyg_perio_input is not None:
+                diff_perio = (40 - hyg_perio_input) / 100
+                if hyg_prod_input >= 30:
+                    h_perio_loss = max(0, diff_perio * (hyg_prod_input / 100) * REV_BASELINE)
                 else:
-                    perio_loss = max(0, (diff_perio_pct * 0.30 * rev) + hyg_prod_loss)
-                
-                results['Hygiene System'] = {'loss': perio_loss, 'color': get_color(hyg_perio_pct, 40, True)}
-            else:
-                results['Hygiene System'] = {'loss': hyg_prod_loss, 'color': 'white'}
+                    # Use the special additive formula for low production
+                    h_perio_loss = max(0, (diff_perio * 0.30 * REV_BASELINE) + h_prod_loss)
+            
+            category_results['Hygiene Production'] = {'loss': h_prod_loss, 'color': "green" if hyg_prod_input >= 30 else "red"}
+            category_results['Hygiene Perio'] = {'loss': h_perio_loss, 'color': "green" if (hyg_perio_input or 0) >= 40 else "red"}
         else:
-            results['Hygiene System'] = {'loss': 0, 'color': 'white', 'msg': "Hygiene production % needed for calculation"}
+            category_results['Hygiene System'] = {'loss': 0, 'color': 'white', 'msg': 'Hygiene Production % Needed'}
 
-        low_hanging_fruit = max(results, key=lambda x: results[x]['loss'])
-        total_loss = sum(item['loss'] for item in results.values())
+        # Determine Low Hanging Fruit and Total
+        low_hanging_fruit = max(category_results, key=lambda x: category_results[x]['loss'])
+        total_loss_final = sum(item['loss'] for item in category_results.values())
 
         # 4. VERDICT RENDERING
-        any_empty = any(v is None for v in [ebitda_val, no_shows, ins_days, hire_weeks, hyg_prod_pct, hyg_perio_pct, new_patients, call_conv_pct])
+        any_skipped = any(v is None for v in [ebitda_input, no_shows_input, ins_days_input, hire_weeks_input, hyg_prod_input, hyg_perio_input, np_input, conv_input])
         
-        empty_msg = f'<p style="color: #00d2ff; font-weight: bold; margin-top: 10px; font-family: sans-serif;">Looks like some fields were skipped. That’s exactly how blind spots happen. Pronto eliminates the guesswork by giving you complete, real-time access to every metric that drives your practice...daily...automatically.</p>' if any_empty else ''
+        skip_msg = f'<p style="color: #00d2ff; font-weight: bold; margin-top: 10px; font-family: sans-serif;">Looks like some fields were skipped. That’s exactly how blind spots happen. Pronto eliminates the guesswork by giving you complete, real-time access to every metric that drives your practice...daily...automatically.</p>' if any_skipped else ''
         
-        verdict_html = f"""
+        st.markdown(f"""
         <div class="report-card">
             <h1 style="color: #ffffff; margin-top:0; font-family: sans-serif;">The Verdict</h1>
             <p style="font-size: 1.2rem; font-family: sans-serif;">Pronto discovered that your low hanging fruit is in <b>{low_hanging_fruit}</b></p>
-            <p style="font-size: 1.1rem; font-family: sans-serif;">Based on 1.2 million in production, your practice is leaving <b>${total_loss:,.0f}</b> on the table annually.</p>
-            {empty_msg}
+            <p style="font-size: 1.1rem; font-family: sans-serif;">Based on 1.2 million in production, your practice is leaving <b>${total_loss_final:,.0f}</b> on the table annually.</p>
+            {skip_msg}
         </div>
-        """
-        st.markdown(verdict_html, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
         # 5. STATUS BLOCKS
         st.markdown('<div class="status-container">', unsafe_allow_html=True)
-        for name, data in results.items():
-            display_name = data.get('msg', name)
-            st.markdown(f'<div class="status-box status-{data["color"]}">{display_name}</div>', unsafe_allow_html=True)
+        for name, data in category_results.items():
+            label = data.get('msg', name)
+            st.markdown(f'<div class="status-box status-{data["color"]}">{label}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 6. UPDATED CTA TEXT
+        # 6. CTA & DISCLAIMER
         st.markdown(f"""
             <div style="text-align: center; margin-bottom: 20px; padding: 10px;">
                 <p style="font-size: 1.2rem; color: #ff8c00; font-weight: 700; margin-bottom: 10px;">“You just got a glimpse.”</p>
@@ -145,7 +148,7 @@ with st.container():
             </div>
         """, unsafe_allow_html=True)
 
-        # 7. LEAD FORM
+        # 7. FORM
         components.html("""
             <iframe src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh" style="width:100%;height:650px;border:none;border-radius:8px" id="inline-iVFg0wteKeXMSEXviPvh" data-form-id="iVFg0wteKeXMSEXviPvh"></iframe>
             <script src="https://link.msgsndr.com/js/form_embed.js"></script>
