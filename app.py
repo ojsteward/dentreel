@@ -43,58 +43,59 @@ with st.container():
         inputs['conv'] = st.number_input("% of Calls Converted to NP", min_value=0, max_value=100, value=None, step=1)
 
     if st.button("Generate Autopsy Results"):
-        # Check for missing values
+        
+        # --- THE ORIGINAL 7-SECOND DELAY ---
+        with st.status("Analyzing Practice Vitals...", expanded=True) as status:
+            time.sleep(2)
+            st.write("Reviewing clinical benchmarks...")
+            time.sleep(2)
+            st.write("Isolating financial leaks...")
+            time.sleep(3)
+            status.update(label="Autopsy Complete!", state="complete", expanded=False)
+
+        # --- ORIGINAL INCOMPLETE DATA MESSAGE ---
         if any(v is None for v in inputs.values()):
             st.warning("I see you left some stuff out. For a full autopsy, all fields are required—but I'll calculate what I can with what you gave me.")
-        
-        # 7-Second Dramatic Delay
-        with st.status("Analyzing Practice Vitals...", expanded=True) as status:
-            time.sleep(2.5)
-            st.write("Reviewing clinical benchmarks...")
-            time.sleep(2.5)
-            st.write("Isolating financial leaks...")
-            time.sleep(2)
-            status.update(label="Autopsy Complete!", state="complete", expanded=False)
 
         # 3. THE SILO ENGINE
         FINAL_RESULTS = {}
         REV_BASE = 1200000
 
-        # EBITDA
+        # EBITDA Silo
         if inputs['ebitda'] is not None:
             loss = ((22 - inputs['ebitda']) / 100 * REV_BASE) if inputs['ebitda'] < 22 else 0
             FINAL_RESULTS['EBITDA'] = {'loss': loss, 'status': "red" if inputs['ebitda'] < 22 else "green"}
 
-        # NO SHOWS
+        # NO SHOWS Silo
         if inputs['noshow'] is not None:
             loss = ((inputs['noshow'] - 5) / 100 * REV_BASE) if inputs['noshow'] > 5 else 0
             FINAL_RESULTS['No Shows'] = {'loss': loss, 'status': "red" if inputs['noshow'] > 5 else "green"}
 
-        # INSURANCE
+        # INSURANCE Silo
         if inputs['ins'] is not None:
             loss = ((inputs['ins'] - 25) / 365 * 0.07 * REV_BASE) if inputs['ins'] > 25 else 0
             FINAL_RESULTS['Insurance'] = {'loss': loss, 'status': "red" if inputs['ins'] > 25 else "green"}
 
-        # HIRING
+        # HIRING Silo
         if inputs['hire'] is not None:
             raw = ((inputs['hire'] - 4) * 5120) - 10000 if inputs['hire'] > 4 else 0
             FINAL_RESULTS['Hiring'] = {'loss': max(0, raw), 'status': "red" if inputs['hire'] > 4 else "green"}
 
-        # PATIENT CONVERSION (NP + Conv)
+        # PATIENT CONVERSION Silo (Original Combined Calculation)
         if inputs['np'] is not None or inputs['conv'] is not None:
-            # Fallback values if only one is provided to ensure it "works alone"
+            # Uses default/ideal values if one side is missing to prevent logic breaks
             curr_np = inputs['np'] if inputs['np'] is not None else 30
             curr_conv = inputs['conv'] if inputs['conv'] is not None else 80
             loss = ((80 - curr_conv) / 100 * curr_np * 1000 * 12) if curr_conv < 80 else 0
             FINAL_RESULTS['Patient Conversion'] = {'loss': loss, 'status': "red" if curr_conv < 80 else "green"}
 
-        # HYGIENE SYSTEM (Prod + Perio)
+        # HYGIENE SYSTEM Silo (Original Combined Calculation)
         if inputs['hprod'] is not None or inputs['hperio'] is not None:
-            # Prod component
+            # Production component
             curr_hprod = inputs['hprod'] if inputs['hprod'] is not None else 30
             hp_loss = ((30 - curr_hprod) / 100 * REV_BASE) if curr_hprod < 30 else 0
             
-            # Perio component
+            # Perio component (Isolated base)
             curr_perio = inputs['hperio'] if inputs['hperio'] is not None else 40
             h_base = (curr_hprod / 100 * REV_BASE) if curr_hprod >= 30 else (0.30 * REV_BASE)
             perio_loss = ((40 - curr_perio) / 100 * h_base) if curr_perio < 40 else 0
@@ -104,7 +105,7 @@ with st.container():
                 'status': "red" if (curr_hprod < 30 or curr_perio < 40) else "green"
             }
 
-        # --- THE VERDICT ---
+        # --- THE VERDICT (WINNER ONLY) ---
         if FINAL_RESULTS:
             failing = {k: v for k, v in FINAL_RESULTS.items() if v['status'] == "red"}
             
@@ -123,12 +124,13 @@ with st.container():
             </div>
             """, unsafe_allow_html=True)
 
+            # Display individual status boxes
             st.markdown('<div class="status-container">', unsafe_allow_html=True)
             for label, data in FINAL_RESULTS.items():
                 st.markdown(f'<div class="status-box status-{data["status"]}">{label}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # 5. FORM
+        # 5. GHL FORM
         components.html("""
             <iframe src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh" style="width:100%;height:600px;border:none;border-radius:8px"></iframe>
             <script src="https://link.msgsndr.com/js/form_embed.js"></script>
