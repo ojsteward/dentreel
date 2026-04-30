@@ -1,5 +1,6 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import time
 
 # 1. SETUP & BRANDING
 st.set_page_config(page_title="Pronto | Practice Revenue Autopsy", page_icon="📈", layout="centered")
@@ -29,69 +30,85 @@ st.title("Practice Revenue Autopsy™")
 # 2. INPUT SECTION
 with st.container():
     col1, col2 = st.columns(2)
+    inputs = {}
     with col1:
-        v_eb = st.number_input("Current EBITDA %", min_value=0, max_value=100, value=None, step=1)
-        v_ns = st.number_input("No Show %", min_value=0, max_value=100, value=None, step=1)
-        v_id = st.number_input("Days to Collect from Ins", min_value=0, value=None, step=1)
-        v_hw = st.number_input("Avg Weeks to Hire a Hygienist", min_value=0, value=None, step=1)
+        inputs['ebitda'] = st.number_input("Current EBITDA %", min_value=0, max_value=100, value=None, step=1)
+        inputs['noshow'] = st.number_input("No Show %", min_value=0, max_value=100, value=None, step=1)
+        inputs['ins'] = st.number_input("Days to Collect from Ins", min_value=0, value=None, step=1)
+        inputs['hire'] = st.number_input("Avg Weeks to Hire a Hygienist", min_value=0, value=None, step=1)
     with col2:
-        v_hp = st.number_input("Hygiene Production %", min_value=0, max_value=100, value=None, step=1)
-        v_per = st.number_input("Hygiene Perio %", min_value=0, max_value=100, value=None, step=1)
-        v_np = st.number_input("# New Patients per Month", min_value=0, value=None, step=1)
-        v_cp = st.number_input("% of Calls Converted to NP", min_value=0, max_value=100, value=None, step=1)
+        inputs['hprod'] = st.number_input("Hygiene Production %", min_value=0, max_value=100, value=None, step=1)
+        inputs['hperio'] = st.number_input("Hygiene Perio %", min_value=0, max_value=100, value=None, step=1)
+        inputs['np'] = st.number_input("# New Patients per Month", min_value=0, value=None, step=1)
+        inputs['conv'] = st.number_input("% of Calls Converted to NP", min_value=0, max_value=100, value=None, step=1)
 
     if st.button("Generate Autopsy Results"):
+        # Check for missing values
+        if any(v is None for v in inputs.values()):
+            st.warning("I see you left some stuff out. For a full autopsy, all fields are required—but I'll calculate what I can with what you gave me.")
         
+        # 7-Second Dramatic Delay
+        with st.status("Analyzing Practice Vitals...", expanded=True) as status:
+            time.sleep(2.5)
+            st.write("Reviewing clinical benchmarks...")
+            time.sleep(2.5)
+            st.write("Isolating financial leaks...")
+            time.sleep(2)
+            status.update(label="Autopsy Complete!", state="complete", expanded=False)
+
         # 3. THE SILO ENGINE
         FINAL_RESULTS = {}
         REV_BASE = 1200000
 
-        # --- SILO 1: EBITDA ---
-        if v_eb is not None:
-            loss = ((22 - v_eb) / 100 * REV_BASE) if v_eb < 22 else 0
-            FINAL_RESULTS['EBITDA'] = {'loss': loss, 'status': "red" if v_eb < 22 else "green"}
+        # EBITDA
+        if inputs['ebitda'] is not None:
+            loss = ((22 - inputs['ebitda']) / 100 * REV_BASE) if inputs['ebitda'] < 22 else 0
+            FINAL_RESULTS['EBITDA'] = {'loss': loss, 'status': "red" if inputs['ebitda'] < 22 else "green"}
 
-        # --- SILO 2: NO SHOWS ---
-        if v_ns is not None:
-            loss = ((v_ns - 5) / 100 * REV_BASE) if v_ns > 5 else 0
-            FINAL_RESULTS['No Shows'] = {'loss': loss, 'status': "red" if v_ns > 5 else "green"}
+        # NO SHOWS
+        if inputs['noshow'] is not None:
+            loss = ((inputs['noshow'] - 5) / 100 * REV_BASE) if inputs['noshow'] > 5 else 0
+            FINAL_RESULTS['No Shows'] = {'loss': loss, 'status': "red" if inputs['noshow'] > 5 else "green"}
 
-        # --- SILO 3: INSURANCE ---
-        if v_id is not None:
-            loss = ((v_id - 25) / 365 * 0.07 * REV_BASE) if v_id > 25 else 0
-            FINAL_RESULTS['Insurance'] = {'loss': loss, 'status': "red" if v_id > 25 else "green"}
+        # INSURANCE
+        if inputs['ins'] is not None:
+            loss = ((inputs['ins'] - 25) / 365 * 0.07 * REV_BASE) if inputs['ins'] > 25 else 0
+            FINAL_RESULTS['Insurance'] = {'loss': loss, 'status': "red" if inputs['ins'] > 25 else "green"}
 
-        # --- SILO 4: HIRING ---
-        if v_hw is not None:
-            raw = ((v_hw - 4) * 5120) - 10000 if v_hw > 4 else 0
-            FINAL_RESULTS['Hiring'] = {'loss': max(0, raw), 'status': "red" if v_hw > 4 else "green"}
+        # HIRING
+        if inputs['hire'] is not None:
+            raw = ((inputs['hire'] - 4) * 5120) - 10000 if inputs['hire'] > 4 else 0
+            FINAL_RESULTS['Hiring'] = {'loss': max(0, raw), 'status': "red" if inputs['hire'] > 4 else "green"}
 
-        # --- SILO 5: PATIENT CONVERSION (COMBINED) ---
-        # Calculation uses BOTH inputs to create ONE result
-        if v_np is not None and v_cp is not None:
-            loss = ((80 - v_cp) / 100 * v_np * 1000 * 12) if v_cp < 80 else 0
-            FINAL_RESULTS['Patient Conversion'] = {'loss': loss, 'status': "red" if v_cp < 80 else "green"}
+        # PATIENT CONVERSION (NP + Conv)
+        if inputs['np'] is not None or inputs['conv'] is not None:
+            # Fallback values if only one is provided to ensure it "works alone"
+            curr_np = inputs['np'] if inputs['np'] is not None else 30
+            curr_conv = inputs['conv'] if inputs['conv'] is not None else 80
+            loss = ((80 - curr_conv) / 100 * curr_np * 1000 * 12) if curr_conv < 80 else 0
+            FINAL_RESULTS['Patient Conversion'] = {'loss': loss, 'status': "red" if curr_conv < 80 else "green"}
 
-        # --- SILO 6: HYGIENE SYSTEM (COMBINED) ---
-        # Calculation uses BOTH inputs to create ONE result
-        if v_hp is not None and v_per is not None:
-            prod_loss = ((30 - v_hp) / 100 * REV_BASE) if v_hp < 30 else 0
-            h_base = (v_hp / 100 * REV_BASE) if v_hp >= 30 else (0.30 * REV_BASE)
-            perio_loss = ((40 - v_per) / 100 * h_base) if v_per < 40 else 0
+        # HYGIENE SYSTEM (Prod + Perio)
+        if inputs['hprod'] is not None or inputs['hperio'] is not None:
+            # Prod component
+            curr_hprod = inputs['hprod'] if inputs['hprod'] is not None else 30
+            hp_loss = ((30 - curr_hprod) / 100 * REV_BASE) if curr_hprod < 30 else 0
             
-            total_h_loss = prod_loss + perio_loss
+            # Perio component
+            curr_perio = inputs['hperio'] if inputs['hperio'] is not None else 40
+            h_base = (curr_hprod / 100 * REV_BASE) if curr_hprod >= 30 else (0.30 * REV_BASE)
+            perio_loss = ((40 - curr_perio) / 100 * h_base) if curr_perio < 40 else 0
+            
             FINAL_RESULTS['Hygiene System'] = {
-                'loss': total_h_loss, 
-                'status': "red" if (v_hp < 30 or v_per < 40) else "green"
+                'loss': hp_loss + perio_loss, 
+                'status': "red" if (curr_hprod < 30 or curr_perio < 40) else "green"
             }
 
-        # --- THE VERDICT (WINNER TAKE ALL) ---
+        # --- THE VERDICT ---
         if FINAL_RESULTS:
-            # Only look at the RED categories
             failing = {k: v for k, v in FINAL_RESULTS.items() if v['status'] == "red"}
             
             if failing:
-                # The "Verdict" is strictly the category with the highest loss
                 winner_key = max(failing, key=lambda k: failing[k]['loss'])
                 winner_loss = failing[winner_key]['loss']
             else:
@@ -106,7 +123,6 @@ with st.container():
             </div>
             """, unsafe_allow_html=True)
 
-            # Status Boxes
             st.markdown('<div class="status-container">', unsafe_allow_html=True)
             for label, data in FINAL_RESULTS.items():
                 st.markdown(f'<div class="status-box status-{data["status"]}">{label}</div>', unsafe_allow_html=True)
