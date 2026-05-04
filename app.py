@@ -53,7 +53,6 @@ with st.container():
 
     if st.button("Generate Autopsy Results"):
         
-        # 7-SECOND DELAY (Restored)
         with st.status("Analyzing Practice Vitals...", expanded=True) as status:
             time.sleep(2)
             st.write("Reviewing clinical benchmarks...")
@@ -62,11 +61,10 @@ with st.container():
             time.sleep(3)
             status.update(label="Autopsy Complete!", state="complete", expanded=False)
 
-        # Missing fields message (Restored)
         if any(v is None for v in inputs.values()):
             st.warning("Looks like some fields were skipped. That’s exactly how blind spots happen. Pronto eliminates the guesswork by giving you complete, real-time access to every metric that drives your practice...daily...automatically.")
 
-        # 3. THE SILO ENGINE (Original Logic)
+        # 3. THE SILO ENGINE
         FINAL_RESULTS = {}
         REV_BASE = 1200000
 
@@ -109,7 +107,7 @@ with st.container():
                 winner_key = "Practice Efficiency"
                 winner_loss = 0
 
-            # --- DATA LOGGING (Silent background step) ---
+            # --- DATA LOGGING (Fixed to Append to Next Line) ---
             new_data = pd.DataFrame([{
                 "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "Practice Name": practice_name if practice_name else "N/A",
@@ -124,14 +122,20 @@ with st.container():
                 "NP Month": inputs['np'],
                 "NP Conv": inputs['conv']
             }])
+
             try:
-                existing_df = conn.read()
+                # Force a refresh of the existing data with ttl=0 to ensure we see the latest rows
+                existing_df = conn.read(ttl=0)
+                # Filter out any completely empty rows that Google Sheets sometimes adds
+                existing_df = existing_df.dropna(how='all')
+                # Append the new entry
                 updated_df = pd.concat([existing_df, new_data], ignore_index=True)
+                # Write back the entire updated dataframe
                 conn.update(data=updated_df)
             except Exception as e:
-                pass # Silent fail to not ruin user experience
+                st.error(f"Spreadsheet log failed: {e}")
 
-            # --- THE VERDICT (Full Original UI Restored) ---
+            # --- THE VERDICT UI ---
             st.markdown(f"""
             <div class="report-card">
                 <h1 style="color: #ffffff; margin-top:0; font-size: 2.2rem;">The Verdict</h1>
@@ -146,13 +150,11 @@ with st.container():
             </div>
             """, unsafe_allow_html=True)
 
-            # Status boxes (Restored)
             st.markdown('<div class="status-container">', unsafe_allow_html=True)
             for label, data in FINAL_RESULTS.items():
                 st.markdown(f'<div class="status-box status-{data["status"]}">{label}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-            # CTA Text (Restored)
             st.markdown(f"""
             <div style="text-align: center; margin-top: 40px; margin-bottom: 20px;">
                 <h2 style="color: #ff8c00;">“You just got a glimpse.</h2>
@@ -165,7 +167,6 @@ with st.container():
             </div>
             """, unsafe_allow_html=True)
 
-            # Disclaimer Box (Restored)
             st.markdown("""
             <div class="disclaimer-box">
                 These results aren’t meant to be perfect—they’re meant to be revealing. 
@@ -175,7 +176,7 @@ with st.container():
             </div>
             """, unsafe_allow_html=True)
 
-            # 5. GHL FORM (Restored)
+            # 5. GHL FORM
             components.html("""
                 <iframe src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh" style="width:100%;height:600px;border:none;border-radius:8px"></iframe>
                 <script src="https://link.msgsndr.com/js/form_embed.js"></script>
