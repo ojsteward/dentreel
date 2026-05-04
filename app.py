@@ -26,6 +26,7 @@ st.markdown("""
     .status-box { padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; font-size: 0.8rem; border: 2px solid transparent; text-transform: uppercase; }
     .status-green { border-color: #28a745; background: rgba(40, 167, 69, 0.1); color: #28a745; }
     .status-red { border-color: #dc3545; background: rgba(220, 53, 69, 0.1); color: #dc3545; }
+    .disclaimer-box { background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 8px; border-left: 4px solid #ff8c00; margin-top: 20px; font-style: italic; font-size: 0.9rem; }
     #MainMenu, footer, header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
@@ -52,42 +53,45 @@ with st.container():
 
     if st.button("Generate Autopsy Results"):
         
-        with st.status("Analyzing Vitals...", expanded=True) as status:
-            time.sleep(1)
-            status.update(label="Complete!", state="complete", expanded=False)
+        # 7-SECOND DELAY (Restored)
+        with st.status("Analyzing Practice Vitals...", expanded=True) as status:
+            time.sleep(2)
+            st.write("Reviewing clinical benchmarks...")
+            time.sleep(2)
+            st.write("Isolating financial leaks...")
+            time.sleep(3)
+            status.update(label="Autopsy Complete!", state="complete", expanded=False)
 
-        # 3. ENGINE
+        # Missing fields message (Restored)
+        if any(v is None for v in inputs.values()):
+            st.warning("Looks like some fields were skipped. That’s exactly how blind spots happen. Pronto eliminates the guesswork by giving you complete, real-time access to every metric that drives your practice...daily...automatically.")
+
+        # 3. THE SILO ENGINE (Original Logic)
         FINAL_RESULTS = {}
         REV_BASE = 1200000
 
-        # EBITDA
         if inputs['ebitda'] is not None:
             loss = ((22 - inputs['ebitda']) / 100 * REV_BASE) if inputs['ebitda'] < 22 else 0
             FINAL_RESULTS['EBITDA'] = {'loss': loss, 'status': "red" if inputs['ebitda'] < 22 else "green"}
 
-        # NO SHOWS
         if inputs['noshow'] is not None:
             loss = ((inputs['noshow'] - 5) / 100 * REV_BASE) if inputs['noshow'] > 5 else 0
             FINAL_RESULTS['No Shows'] = {'loss': loss, 'status': "red" if inputs['noshow'] > 5 else "green"}
 
-        # INSURANCE
         if inputs['ins'] is not None:
             loss = ((inputs['ins'] - 25) / 365 * 0.07 * REV_BASE) if inputs['ins'] > 25 else 0
             FINAL_RESULTS['Insurance'] = {'loss': loss, 'status': "red" if inputs['ins'] > 25 else "green"}
 
-        # HIRING
         if inputs['hire'] is not None:
             raw = ((inputs['hire'] - 4) * 5120) - 10000 if inputs['hire'] > 4 else 0
             FINAL_RESULTS['Hiring'] = {'loss': max(0, raw), 'status': "red" if inputs['hire'] > 4 else "green"}
 
-        # PATIENT CONVERSION
         if inputs['np'] is not None or inputs['conv'] is not None:
             curr_np = inputs['np'] if inputs['np'] is not None else 30
             curr_conv = inputs['conv'] if inputs['conv'] is not None else 80
             loss = ((80 - curr_conv) / 100 * curr_np * 1000 * 12) if curr_conv < 80 else 0
             FINAL_RESULTS['Patient Conversion'] = {'loss': loss, 'status': "red" if curr_conv < 80 else "green"}
 
-        # HYGIENE SYSTEM
         if inputs['hprod'] is not None or inputs['hperio'] is not None:
             curr_hprod = inputs['hprod'] if inputs['hprod'] is not None else 30
             hp_loss = ((30 - curr_hprod) / 100 * REV_BASE) if curr_hprod < 30 else 0
@@ -98,50 +102,80 @@ with st.container():
 
         if FINAL_RESULTS:
             failing = {k: v for k, v in FINAL_RESULTS.items() if v['status'] == "red"}
-            winner_key = max(failing, key=lambda k: failing[k]['loss']) if failing else "Efficiency"
-            winner_loss = failing[winner_key]['loss'] if failing else 0
+            if failing:
+                winner_key = max(failing, key=lambda k: failing[k]['loss'])
+                winner_loss = failing[winner_key]['loss']
+            else:
+                winner_key = "Practice Efficiency"
+                winner_loss = 0
 
-            # --- DATA LOGGING ---
-            new_entry = pd.DataFrame([{
+            # --- DATA LOGGING (Silent background step) ---
+            new_data = pd.DataFrame([{
                 "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "Practice Name": practice_name if practice_name else "Anonymous",
-                "Top Revenue Leak": winner_key,
-                "Annual Loss": round(winner_loss, 2),
-                "EBITDA %": inputs['ebitda'],
-                "No Show %": inputs['noshow'],
-                "Insurance Days": inputs['ins'],
-                "Hiring Weeks": inputs['hire'],
-                "NP Count": inputs['np'],
-                "NP Conv %": inputs['conv']
+                "Practice Name": practice_name if practice_name else "N/A",
+                "Winner Key": winner_key,
+                "Winner Loss": winner_loss,
+                "EBITDA": inputs['ebitda'],
+                "No Shows": inputs['noshow'],
+                "Insurance": inputs['ins'],
+                "Hiring": inputs['hire'],
+                "Hygiene Prod": inputs['hprod'],
+                "Hygiene Perio": inputs['hperio'],
+                "NP Month": inputs['np'],
+                "NP Conv": inputs['conv']
             }])
-
             try:
-                # Read Current Data
                 existing_df = conn.read()
-                # Append and Update
-                updated_df = pd.concat([existing_df, new_entry], ignore_index=True)
+                updated_df = pd.concat([existing_df, new_data], ignore_index=True)
                 conn.update(data=updated_df)
-                st.toast("Autopsy data logged to Google Sheet!")
             except Exception as e:
-                st.error(f"Spreadsheet Error: {e}")
+                pass # Silent fail to not ruin user experience
 
-            # --- THE VERDICT UI ---
+            # --- THE VERDICT (Full Original UI Restored) ---
             st.markdown(f"""
             <div class="report-card">
                 <h1 style="color: #ffffff; margin-top:0; font-size: 2.2rem;">The Verdict</h1>
-                <p style="font-size: 1.3rem;"><b>{practice_name if practice_name else 'your practice'}'s</b> low hanging fruit is in <b>"{winner_key}"</b></p>
-                <p style="font-size: 1.2rem; color: #00d2ff; font-weight: bold;">
-                    Annual revenue leak: <span style="color: #ff4500;">${winner_loss:,.0f}</span>
+                <p style="font-size: 1.3rem; margin-bottom: 20px;">Pronto discovered that <b>{practice_name if practice_name else 'your practice'}'s</b> low hanging fruit is in <b>"{winner_key}"</b></p>
+                <p style="font-size: 1.2rem; color: #00d2ff; font-weight: bold; margin-bottom: 25px;">
+                    Based on 1.2 million in production, your practice is leaving <span style="color: #ff4500;">${winner_loss:,.0f}</span> on the table annually.
+                </p>
+                <p style="font-size: 1rem; line-height: 1.6; color: #cccccc;">
+                    To get a more detailed analysis and autopsy of your personal results, please fill out the following 
+                    and we will elaborate on the "{winner_key}" results as well as the others and let you know what can be done about it.
                 </p>
             </div>
             """, unsafe_allow_html=True)
 
+            # Status boxes (Restored)
             st.markdown('<div class="status-container">', unsafe_allow_html=True)
             for label, data in FINAL_RESULTS.items():
                 st.markdown(f'<div class="status-box status-{data["status"]}">{label}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-            # HighLevel Form
+            # CTA Text (Restored)
+            st.markdown(f"""
+            <div style="text-align: center; margin-top: 40px; margin-bottom: 20px;">
+                <h2 style="color: #ff8c00;">“You just got a glimpse.</h2>
+                <p style="font-size: 1.2rem; font-weight: bold;">Now let’s find what you’re actually missing.</p>
+                <p style="font-size: 1.1rem; line-height: 1.5;">
+                    Fill out the form below to unlock your full Practice Autopsy—breaking down exactly where revenue is leaking across all 6 categories.<br><br>
+                    <b>Because if this much showed up from a few inputs…</b><br>
+                    what do you think happens when you’re tracking 140+ metrics in real time?
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Disclaimer Box (Restored)
+            st.markdown("""
+            <div class="disclaimer-box">
+                These results aren’t meant to be perfect—they’re meant to be revealing. 
+                We’ve taken your inputs and applied industry benchmarks to surface likely gaps. 
+                But without real-time data integration, there are variables we simply can’t see. 
+                Pronto doesn’t guess. It knows. This is the preview… not the movie.
+            </div>
+            """, unsafe_allow_html=True)
+
+            # 5. GHL FORM (Restored)
             components.html("""
                 <iframe src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh" style="width:100%;height:600px;border:none;border-radius:8px"></iframe>
                 <script src="https://link.msgsndr.com/js/form_embed.js"></script>
