@@ -29,8 +29,12 @@ st.markdown("""
     .disclaimer-box { background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 8px; border-left: 4px solid #ff8c00; margin-top: 20px; font-style: italic; font-size: 0.9rem; }
     #MainMenu, footer, header {visibility: hidden;}
     
-    /* Forces Streamlit's warning text to render in white */
-    div[data-testid="stNotification"] p { color: #ffffff !important; }
+    /* Forces Streamlit's warning background container text to render completely white */
+    div[data-testid="stNotification"], 
+    div[data-testid="stNotification"] p,
+    div[data-testid="stNotification"] div { 
+        color: #ffffff !important; 
+    }
     </style>
     """, unsafe_allow_html=True)
 
