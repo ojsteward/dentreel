@@ -138,4 +138,64 @@ with st.container():
                 "EBITDA": inputs['ebitda'],
                 "No Shows": inputs['noshow'],
                 "Insurance": inputs['ins'],
-                "Hiring": inputs
+                "Hiring": inputs['hire'],
+                "Hygiene Prod": inputs['hprod'],
+                "Hygiene Perio": inputs['hperio'],
+                "NP Month": inputs['np'],
+                "NP Conv": inputs['conv']
+            }])
+
+            try:
+                existing_df = conn.read(ttl=0)
+                existing_df = existing_df.dropna(how='all')
+                updated_df = pd.concat([existing_df, new_data], ignore_index=True)
+                conn.update(data=updated_df)
+            except Exception as e:
+                st.error(f"Spreadsheet log failed: {e}")
+
+            # --- THE VERDICT UI ---
+            st.markdown(f"""
+            <div class="report-card">
+                <h1 style="color: #ffffff; margin-top:0; font-size: 2.2rem;">The Verdict</h1>
+                <p style="font-size: 1.3rem; margin-bottom: 20px;">Pronto discovered that <b>{practice_name if practice_name else 'your practice'}'s</b> low hanging fruit is in <b>"{winner_key}"</b></p>
+                <p style="font-size: 1.2rem; color: #00d2ff; font-weight: bold; margin-bottom: 25px;">
+                    Based on 1.2 million in production, your practice is leaving <span style="color: #ff4500;">${winner_loss:,.0f}</span> on the table annually.
+                </p>
+                <p style="font-size: 1rem; line-height: 1.6; color: #cccccc;">
+                    To get a more detailed analysis and autopsy of your personal results, please fill out the following 
+                    and we will elaborate on the "{winner_key}" results as well as the others and let you know what can be done about it.
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown('<div class="status-container">', unsafe_allow_html=True)
+            for label, data in FINAL_RESULTS.items():
+                st.markdown(f'<div class="status-box status-{data["status"]}">{label}</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            st.markdown(f"""
+            <div style="text-align: center; margin-top: 40px; margin-bottom: 20px;">
+                <h2 style="color: #ff8c00;">“You just got a glimpse.</h2>
+                <p style="font-size: 1.2rem; font-weight: bold;">Now let’s find what you’re actually missing.</p>
+                <p style="font-size: 1.1rem; line-height: 1.5;">
+                    Fill out the form below to unlock your full Practice Autopsy—breaking down exactly where revenue is leaking across all 6 categories.<br><br>
+                    <b>Because if this much showed up from a few inputs…</b><br>
+                    what do you think happens when you’re tracking 140+ metrics in real time?
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("""
+            <div class="disclaimer-box">
+                These results aren’t meant to be perfect—they’re meant to be revealing. 
+                We’ve taken your inputs and applied industry benchmarks to surface likely gaps. 
+                But without real-time data integration, there are variables we simply can’t see. 
+                Pronto doesn’t guess. It knows. This is the preview… not the movie.
+            </div>
+            """, unsafe_allow_html=True)
+
+            # 5. GHL FORM
+            components.html("""
+                <iframe src="https://api.leadconnectorhq.com/widget/form/iVFg0wteKeXMSEXviPvh" style="width:100%;height:600px;border:none;border-radius:8px"></iframe>
+                <script src="https://link.msgsndr.com/js/form_embed.js"></script>
+            """, height=650)
