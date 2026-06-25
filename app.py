@@ -1,4 +1,38 @@
 import streamlit as st
+import os
+import json
+from pathlib import Path
+
+# --- FOOLPROOF PRODUCTION AUTHENTICATION ENGINE ---
+# This automatically converts your raw Render JSON string into a secure Streamlit file before the app initializes
+if "SERVICE_ACCOUNT_JSON" in os.environ:
+    try:
+        # Parse the raw JSON to ensure validity
+        creds = json.loads(os.environ["SERVICE_ACCOUNT_JSON"])
+        
+        # Format the values exactly as the Streamlit connection expectations require
+        secrets_content = f"""
+[connections.gsheets]
+spreadsheet = "https://docs.google.com/spreadsheets/d/1Md6YCNDA3arJy2jVRunjOySjxNK9_FHtcGRtqoVe5J4/edit?gid=0#gid=0"
+type = "{creds.get('type', 'service_account')}"
+project_id = "{creds.get('project_id', '')}"
+private_key_id = "{creds.get('private_key_id', '')}"
+private_key = "{creds.get('private_key', '').replace('\n', '\\n')}"
+client_email = "{creds.get('client_email', '')}"
+client_id = "{creds.get('client_id', '')}"
+auth_uri = "{creds.get('auth_uri', 'https://accounts.google.com/o/oauth2/auth')}"
+token_uri = "{creds.get('token_uri', 'https://oauth2.googleapis.com/token')}"
+auth_provider_x509_cert_url = "{creds.get('auth_provider_x509_cert_url', 'https://www.googleapis.com/oauth2/v1/certs')}"
+client_x509_cert_url = "{creds.get('client_x509_cert_url', '')}"
+"""
+        # Ensure the .streamlit folder exists on Render and write the file
+        Path(".streamlit").mkdir(exist_ok=True)
+        with open(".streamlit/secrets.toml", "w") as f:
+            f.write(secrets_content)
+    except Exception as e:
+        st.error(f"Failed to generate runtime credentials file: {e}")
+
+# Now import the connection engine securely
 from streamlit_gsheets import GSheetsConnection
 import streamlit.components.v1 as components
 import pandas as pd
@@ -8,7 +42,7 @@ from datetime import datetime
 # 1. SETUP & BRANDING
 st.set_page_config(page_title="Pronto | Practice Revenue Autopsy", page_icon="📈", layout="centered")
 
-# Establish Google Sheets Connection
+# Establish Google Sheets Connection (Reads the file generated above natively)
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 st.markdown("""
