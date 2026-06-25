@@ -9,7 +9,7 @@ from datetime import datetime
 st.set_page_config(page_title="Pronto | Practice Revenue Autopsy", page_icon="📈", layout="centered")
 
 # Establish Google Sheets Connection
-conn = st.connection("gsheets", type=GSheetsConnection)
+conn = st.connection("gsheets", type=GSheetsConnection, autodetect=False)
 
 st.markdown("""
     <style>
