@@ -146,11 +146,12 @@ with st.container():
             }])
 
             try:
-                # Streamlit automatically uses the formatted secrets to read and append rows
-                existing_df = conn.read(ttl=0)
+                # Target the spreadsheet explicitly by its URL
+                spreadsheet_url = "https://docs.google.com/spreadsheets/d/1Md6YCNDA3arJy2jVRunjOySjxNK9_FHtcGRtqoVe5J4/edit?gid=0#gid=0"
+                existing_df = conn.read(spreadsheet=spreadsheet_url, ttl=0)
                 existing_df = existing_df.dropna(how='all')
                 updated_df = pd.concat([existing_df, new_data], ignore_index=True)
-                conn.update(data=updated_df)
+                conn.update(data=updated_df, spreadsheet=spreadsheet_url)
             except Exception as e:
                 st.error(f"Spreadsheet log failed: {e}")
 
