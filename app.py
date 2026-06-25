@@ -4,22 +4,12 @@ import streamlit.components.v1 as components
 import pandas as pd
 import time
 from datetime import datetime
-import os
-import json
 
 # 1. SETUP & BRANDING
 st.set_page_config(page_title="Pronto | Practice Revenue Autopsy", page_icon="📈", layout="centered")
 
-# Establish Google Sheets Connection safely by explicitly loading the Service Account from Render
-if "STREAMLIT_CONNECTIONS_GSHEETS_SERVICE_ACCOUNT" in os.environ:
-    try:
-        service_account_info = json.loads(os.environ["STREAMLIT_CONNECTIONS_GSHEETS_SERVICE_ACCOUNT"])
-        conn = st.connection("gsheets", type=GSheetsConnection, service_account=service_account_info)
-    except Exception as json_err:
-        st.error(f"Error parsing service account JSON from environment: {json_err}")
-        conn = st.connection("gsheets", type=GSheetsConnection)
-else:
-    conn = st.connection("gsheets", type=GSheetsConnection)
+# Establish Google Sheets Connection
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 st.markdown("""
     <style>
@@ -156,7 +146,7 @@ with st.container():
             }])
 
             try:
-                # Reads spreadsheet configurations automatically sourced from Render environments
+                # Streamlit automatically uses the formatted secrets to read and append rows
                 existing_df = conn.read(ttl=0)
                 existing_df = existing_df.dropna(how='all')
                 updated_df = pd.concat([existing_df, new_data], ignore_index=True)
