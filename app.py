@@ -82,7 +82,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.image("https://assets.cdn.filesafe.space/MCcnQ0ytnakrb0FwnYIM/media/69ea1f539fe87a999456bbe3.png", width=220)
+st.image("https://assets.cdn.filesafe.space/m3q2qalMCnhAfklCMau5/media/69cfe385d0e88a4b7fa4e9e8.jpg", width=220)
 st.title("Practice Revenue Autopsy™")
 
 # 2. INPUT SECTION
