@@ -93,11 +93,11 @@ with st.container():
     inputs = {}
     with col1:
         inputs['ebitda'] = st.number_input("Current EBITDA %", min_value=0, max_value=100, value=None, step=1)
-        inputs['noshow'] = st.number_input("No Show %", min_value=0, max_value=100, value=None, step=1)
+        inputs['hprod'] = st.number_input("Hygiene Production %", min_value=0, max_value=100, value=None, step=1) # Moved here
         inputs['ins'] = st.number_input("Days to Collect from Ins", min_value=0, value=None, step=1)
         inputs['hire'] = st.number_input("Avg Weeks to Hire a Hygienist", min_value=0, value=None, step=1)
     with col2:
-        inputs['hprod'] = st.number_input("Hygiene Production %", min_value=0, max_value=100, value=None, step=1)
+        inputs['noshow'] = st.number_input("No Show %", min_value=0, max_value=100, value=None, step=1) # Moved here
         inputs['hperio'] = st.number_input("Hygiene Perio %", min_value=0, max_value=100, value=None, step=1)
         inputs['np'] = st.number_input("# New Patients per Month", min_value=0, value=None, step=1)
         inputs['conv'] = st.number_input("% of Calls Converted to NP", min_value=0, max_value=100, value=None, step=1)
