@@ -4,13 +4,9 @@ import json
 from pathlib import Path
 
 # --- FOOLPROOF PRODUCTION AUTHENTICATION ENGINE ---
-# This automatically converts your raw Render JSON string into a secure Streamlit file before the app initializes
 if "SERVICE_ACCOUNT_JSON" in os.environ:
     try:
-        # Parse the raw JSON to ensure validity
         creds = json.loads(os.environ["SERVICE_ACCOUNT_JSON"])
-        
-        # Format the values exactly as the Streamlit connection expectations require
         secrets_content = f"""
 [connections.gsheets]
 spreadsheet = "https://docs.google.com/spreadsheets/d/1Md6YCNDA3arJy2jVRunjOySjxNK9_FHtcGRtqoVe5J4/edit?gid=0#gid=0"
@@ -25,14 +21,12 @@ token_uri = "{creds.get('token_uri', 'https://oauth2.googleapis.com/token')}"
 auth_provider_x509_cert_url = "{creds.get('auth_provider_x509_cert_url', 'https://www.googleapis.com/oauth2/v1/certs')}"
 client_x509_cert_url = "{creds.get('client_x509_cert_url', '')}"
 """
-        # Ensure the .streamlit folder exists on Render and write the file
         Path(".streamlit").mkdir(exist_ok=True)
         with open(".streamlit/secrets.toml", "w") as f:
             f.write(secrets_content)
     except Exception as e:
         st.error(f"Failed to generate runtime credentials file: {e}")
 
-# Now import the connection engine securely
 from streamlit_gsheets import GSheetsConnection
 import streamlit.components.v1 as components
 import pandas as pd
@@ -42,7 +36,6 @@ from datetime import datetime
 # 1. SETUP & BRANDING
 st.set_page_config(page_title="Pronto | Practice Revenue Autopsy", page_icon="📈", layout="centered")
 
-# Establish Google Sheets Connection (Reads the file generated above natively)
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 st.markdown("""
@@ -62,7 +55,6 @@ st.markdown("""
     .status-red { border-color: #dc3545; background: rgba(220, 53, 69, 0.1); color: #dc3545; }
     .disclaimer-box { background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 8px; border-left: 4px solid #ff8c00; margin-top: 20px; font-style: italic; font-size: 0.9rem; }
     
-    /* Custom White Text Warning Box Style */
     .custom-warning-box {
         background-color: rgba(255, 140, 0, 0.1) !important;
         border: 1px solid rgba(255, 140, 0, 0.4) !important;
@@ -71,19 +63,16 @@ st.markdown("""
         border-radius: 6px !important;
         margin-bottom: 25px !important;
     }
-    .custom-warning-box p {
-        color: #ffffff !important;
-        margin: 0 !important;
-        font-size: 0.95rem !important;
-        line-height: 1.5 !important;
-    }
+    .custom-warning-box p { color: #ffffff !important; margin: 0 !important; font-size: 0.95rem !important; line-height: 1.5 !important; }
+    
+    /* Dedicated Custom Styled Separation Line */
+    .ghl-divider { border: 0; height: 2px; background: linear-gradient(90deg, transparent, #00d2ff, transparent); margin: 50px 0; }
     
     #MainMenu, footer, header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# Swapped with your new logo URL here:
-st.image("https://assets.cdn.filesafe.space/2TCpScjx7MU1ZqFgoQKY/media/6a45138ddc5f2c22a2815e0c.png", width=220)
+st.image("https://assets.cdn.filesafe.space/2TCpScjx7MU1ZqFgoQKY/media/6a450ebc8b4444aad4e1c10d.png", width=220)
 st.title("Practice Revenue Autopsy™")
 
 # 2. INPUT SECTION
@@ -94,26 +83,27 @@ with st.container():
     inputs = {}
     with col1:
         inputs['ebitda'] = st.number_input("Current EBITDA %", min_value=0, max_value=100, value=None, step=1)
-        inputs['hprod'] = st.number_input("Hygiene Production %", min_value=0, max_value=100, value=None, step=1)
+        inputs['noshow'] = st.number_input("No Show %", min_value=0, max_value=100, value=None, step=1) # Reverted back here
         inputs['ins'] = st.number_input("Days to Collect from Ins", min_value=0, value=None, step=1)
         inputs['hire'] = st.number_input("Avg Weeks to Hire a Hygienist", min_value=0, value=None, step=1)
     with col2:
-        inputs['noshow'] = st.number_input("No Show %", min_value=0, max_value=100, value=None, step=1)
+        inputs['hprod'] = st.number_input("Hygiene Production %", min_value=0, max_value=100, value=None, step=1) # Reverted back here
         inputs['hperio'] = st.number_input("Hygiene Perio %", min_value=0, max_value=100, value=None, step=1)
         inputs['np'] = st.number_input("# New Patients per Month", min_value=0, value=None, step=1)
         inputs['conv'] = st.number_input("% of Calls Converted to NP", min_value=0, max_value=100, value=None, step=1)
 
     if st.button("Generate Autopsy Results"):
         
-        with st.status("Analyzing Practice Vitals...", expanded=True) as status:
-            time.sleep(2)
-            st.write("Reviewing clinical benchmarks...")
-            time.sleep(2)
-            st.write("Isolating financial leaks...")
-            time.sleep(3)
+        # Animated Stepped Loading Sequence
+        with st.status("Initializing Systems...", expanded=True) as status:
+            with st.spinner("Reviewing clinical benchmarks..."):
+                time.sleep(2)
+            with st.spinner("Isolating financial leaks..."):
+                time.sleep(2)
+            with st.spinner("Crunching analytics and logging practice data..."):
+                time.sleep(2)
             status.update(label="Autopsy Complete!", state="complete", expanded=False)
 
-        # Replaced native st.warning with custom HTML warning container to force white text
         if any(v is None for v in inputs.values()):
             st.markdown("""
                 <div class="custom-warning-box">
@@ -181,7 +171,6 @@ with st.container():
             }])
 
             try:
-                # Target the spreadsheet explicitly by its URL
                 spreadsheet_url = "https://docs.google.com/spreadsheets/d/1Md6YCNDA3arJy2jVRunjOySjxNK9_FHtcGRtqoVe5J4/edit?gid=0#gid=0"
                 existing_df = conn.read(spreadsheet=spreadsheet_url, ttl=0)
                 existing_df = existing_df.dropna(how='all')
@@ -205,10 +194,18 @@ with st.container():
             </div>
             """, unsafe_allow_html=True)
 
+            # Grid Container
             st.markdown('<div class="status-container">', unsafe_allow_html=True)
             for label, data in FINAL_RESULTS.items():
                 st.markdown(f'<div class="status-box status-{data["status"]}">{label}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
+
+            # Custom Results Context Messages
+            for label, data in FINAL_RESULTS.items():
+                if data["status"] == "green":
+                    st.markdown(f"🟢 **{label}:** Congratulations, your numbers are Great")
+                else:
+                    st.markdown(f"🔴 **{label}:** Urgent attention needed. This is a tremendous opportunity to fix this")
 
             st.markdown(f"""
             <div style="text-align: center; margin-top: 40px; margin-bottom: 20px;">
@@ -230,6 +227,9 @@ with st.container():
                 Pronto doesn’t guess. It knows. This is the preview… not the movie.
             </div>
             """, unsafe_allow_html=True)
+
+            # Styled clean division element between messages and the GHL component
+            st.markdown('<hr class="ghl-divider">', unsafe_allow_html=True)
 
             # 5. GHL FORM
             components.html("""
